@@ -9,7 +9,8 @@ import {execSync} from 'node:child_process';
 
 const argv=process.argv.slice(2),opt=(k,d)=>{const i=argv.indexOf(k);return i<0?d:argv[i+1]};
 const LEVEL=+opt('--level',1),ROLL=!argv.includes('--no-roll'),ITER=+opt('--iter',60),LIMIT=13312,TARGET=12900;
-const OPT=['audio','particles'].filter(f=>argv.includes('--'+f)); // build-optional features (CLAUDE.md priority 5–6); lines tagged //@name
+// optional features, lines tagged //@name: audio + particles are on by default (--no-audio / --no-particles); the Eclipse boss (waves 9–12) is opt-in (--eclipse) — see DECISIONS.md
+const OPT=['audio','particles'].filter(f=>!argv.includes('--no-'+f)).concat(argv.includes('--eclipse')?['eclipse']:[]);
 const ORDER=['vec','sim','input','xr','audio','render','main'].filter(m=>existsSync(`src/${m}.js`)&&(m!='audio'||OPT.includes('audio')));
 mkdirSync('dist',{recursive:true});
 
@@ -21,7 +22,7 @@ if(/three\/addons|\/jsm\//.test(raw)){console.error('FAIL: addons/jsm reference 
 writeFileSync('dist/bundle.raw.js',raw);
 
 // 2. terser
-const tOpts={compress:{passes:5,unsafe:true,unsafe_math:true,unsafe_arrows:true,unsafe_methods:true,unsafe_proto:true,toplevel:true,drop_console:true,pure_getters:true,hoist_funs:true,ecma:2020}, // no booleans_as_integers: Three tests `=== false`/`=== true`
+const tOpts={compress:{passes:5,unsafe:true,unsafe_math:true,unsafe_comps:true,unsafe_arrows:true,unsafe_methods:true,unsafe_proto:true,toplevel:true,drop_console:true,pure_getters:true,hoist_funs:true,ecma:2020}, // no booleans_as_integers: Three tests `=== false`/`=== true`
   mangle:{toplevel:true,properties:{regex:/^_/}},format:{comments:false,ecma:2020},module:false};
 const min=(await minify(raw,tOpts)).code;
 writeFileSync('dist/bundle.min.js',min);
@@ -34,7 +35,7 @@ if(ROLL){const packer=new Packer([{data:min,type:'js',action:'eval'}],{});await 
 writeFileSync('dist/bundle.rolled.js',rolled);
 
 // 4. inline
-const css='body{margin:0;background:#070a14;color:#dfe6ff;font:14px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;font-size:12px;opacity:.6}#u{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:20px}';
+const css='body{margin:0;background:#0b0f1e;color:#dfe6ff;font:13px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;opacity:.6}#u{padding:40px;text-align:center;font-size:20px}';
 const html=`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Sevenfold</title><style>${css}</style><div id=u></div><script>U="https://play.js13kgames.com/2026/webxr/three.js";${rolled}</script>`;
 writeFileSync('dist/index.html',html);
 const urls=html.match(/https?:\/\/[^"' ]*/g)||[];

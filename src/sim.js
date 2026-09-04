@@ -7,7 +7,8 @@ export const WN=['rope','lance','halo','maul','shards','prism'];
 // enemy table: hp, speed, radius, half-height, hit-centre height
 const ET=[[3,4.5,.25,0,1.5],[9,1.2,.35,.7,1.1],[6,.6,.6,0,.5],[6,.9,.45,0,.6],[1,3.5,.15,0,1.4]];
 // waves: [interval, spread(deg), type,count, ...]; single number = boss id
-const WAVES=[[3,40,0,5],[2.6,60,0,4,1,2],[2.6,90,2,2,0,4],[0],[1.8,120,0,6,1,3,2,1],[2.3,120,3,2,0,4],[3.2,180,4,1,2,2,1,2],[1],[2.4,180,4,2,3,2],[1.5,180,2,4,1,4,0,6],[3,180,3,3,4,1,2,3,1,4],[2]];
+const WAVES=[[3,40,0,5],[2.6,60,0,4,1,2],[2.6,90,2,2,0,4],[0],[1.8,120,0,6,1,3,2,1],[2.3,120,3,2,0,4],[3.2,180,4,1,2,2,1,2],[1]];
+WAVES.push([2.4,180,4,2,3,2],[1.5,180,2,4,1,4,0,6],[3,180,3,3,4,1,2,3,1,4],[2]); //@eclipse
 const UNI=[0,.9,-1.8]; // unicorn body centre
 const F=[0,0,-1]; // controller forward in controller space
 const bpos=(b,r,y)=>[sin(b)*r,y,cos(b)*r];
@@ -72,7 +73,7 @@ const spawn=(t,b,r)=>{
   else if(t==4){for(let i=0;i<10;i++)e._parts.push({_o:bpos(i*.628,.5,0),_hp:1,_b:e._b})}
   else e._parts.push({_o:[0,0,0],_hp:T[0],_b:e._b});
   S._en.push(e);ev('spawn',e._p,e._b,t);return e};
-const killE=e=>{e._hp=0;S._score+=e._boss>=0?500:10;ev('kill',e._p,e._b,e._t);if(e._boss>=0){S._ring++;S._light=min(5,S._light+2);ev('bossdead',e._p,0,e._boss);if(e._boss==2){S._log.push([S._wave,S._wtime]);S._ws=4;S._wt=6;ev('dawn')}}};
+const killE=e=>{e._hp=0;S._score+=e._boss>=0?500:10;ev('kill',e._p,e._b,e._t);if(e._boss>=0){S._ring++;S._light=min(5,S._light+2);ev('bossdead',e._p,0,e._boss);if(e._boss==WAVES.length/4-1){S._log.push([S._wave,S._wtime]);S._ws=4;S._wt=6;ev('dawn')}}};
 const partHit=(e,pt,src)=>{ // can this source hit this part now?
   if(pt._hp<=0||e._inv)return 0;
   if(pt._core&&e._parts.some(q=>q._pl&&q._hp>0))return 0;
@@ -240,10 +241,8 @@ const enemies=w=>{
 
 // ---------- bosses ----------
 const bossPartDead=e=>{
-  if(e._boss==2){
-    if(e._ph==1&&!e._parts.some(p=>p._hp>0)){e._ph=3;e._p=[0,2,0];e._parts=[{_o:[0,0,0],_hp:220,_b:0,_r:.6}];e._tm=[3,0];e._inv=0;ev('phase',e._p,0,3)}
-    else if(e._ph==3&&!e._parts.some(p=>p._hp>0))killE(e);
-  }else if(e._boss==1){
+  if(e._boss==2){if(e._ph==1&&!e._parts.some(p=>p._hp>0)){e._ph=3;e._p=[0,2,0];e._parts=[{_o:[0,0,0],_hp:220,_b:0,_r:.6}];e._tm=[3,0];e._inv=0;ev('phase',e._p,0,3)}else if(e._ph==3&&!e._parts.some(p=>p._hp>0))killE(e)} //@eclipse
+  if(e._boss==1){
     if(!e._parts.some(p=>p._hp>0))killE(e);
     else if(!e._parts.some(p=>p._pl&&p._hp>0)&&e._ph==1){e._ph=2;e._tm=[5,3];e._atk=0;e._p=mul(e._fw,-2.2);e._parts[6]._b=2+floor(rnd()*5);ev('phase',e._p,0,2)}
   }else if(!e._parts.some(p=>p._hp>0))killE(e);
@@ -253,16 +252,14 @@ const spawnBoss=id=>{
   const e={_boss:id,_by:by,_fw:fw,_rt:rt,_hp:1,_r:.5,_hh:0,_b:floor(rnd()*7),_stg:0,_parts:[],_atk:0,_ph:1,_open:0,_inv:0,_spawned:0};
   if(id==0){e._p=add(mul(fw,-6),[0,7,0]);e._parts=[{_o:[0,0,0],_hp:400,_b:e._b,_far:1,_r:.8}];e._tm=[3,8,6]}
   if(id==1){e._p=mul(fw,-3);e._parts=[[-.4,2.2,0],[.4,2.2,0],[-.9,2.8,0],[.9,2.8,0],[-1.2,1.4,0],[1.2,1.4,0]].map(o=>({_o:o,_hp:8,_b:floor(rnd()*7),_pl:1,_r:.35}));e._parts.push({_o:[0,1.5,0],_hp:650,_b:e._b,_core:1,_melee:1,_r:.5});e._tm=[5,4]}
-  if(id==2){e._p=add(mul(fw,-6),[0,6,0]);e._parts=[{_o:[0,0,0],_hp:130,_b:e._b,_far:1,_r:.9}];e._inv=1;e._tm=[0,0];S._dark=1}
+  if(id==2){e._p=add(mul(fw,-6),[0,6,0]);e._parts=[{_o:[0,0,0],_hp:130,_b:e._b,_far:1,_r:.9}];e._inv=1;e._tm=[0,0];S._dark=1} //@eclipse
   S._en.push(e);ev('boss',e._p,e._b,id);return e};
 const strike=(e,k,r,t)=>{e._atk={k,r,t:t||.8,p:[S._H.p[0],0,S._H.p[2]]};ev('cue',e._atk.p,k,e._atk.t)};
 const resolveAtk=(e,w)=>{const A=e._atk;if(!A)return;A.t-=w;if(A.t>0)return;e._atk=0;const H=S._H.p;
   if(A.k==0){if(hd(H,A.p)<A.r+.18)hurt(1);ev('strike',A.p,0,A.k)} // column / slam / tentacle
   else if(A.k==1){if(H[1]>A.r-.2)hurt(1);ev('sweep',[0,A.r,0],0,1)} // horizontal sweep at height r
   else if(A.k==2){hurt(1);ev('lunge',e._p)} // lunge landed
-  else if(A.k==3){ // light-eater pulse: need taut arc or lance across the unicorn
-    const U=[0,1,-1.8];let sh=0;if(S._wp==0&&S._ten>=.7)sh=S._rp.some(p=>dist(p,U)<1);if(S._wp==1){const L=S._L.p,d=norm(sub(S._R.p,L));sh=segd(U,L,add(L,mul(d,2.2)))[0]<1}
-    if(!sh)hurt(1);ev('pulse',U,0,sh)}
+  else if(A.k==3){const U=[0,1,-1.8];let sh=0;if(S._wp==0&&S._ten>=.7)sh=S._rp.some(p=>dist(p,U)<1);if(S._wp==1){const L=S._L.p,d=norm(sub(S._R.p,L));sh=segd(U,L,add(L,mul(d,2.2)))[0]<1}if(!sh)hurt(1);ev('pulse',U,0,sh)} //@eclipse light-eater pulse: taut arc or lance across the unicorn
 };
 const boss=(e,w)=>{
   const T=e._tm;if(e._stg>0){e._stg-=w;return}
@@ -283,19 +280,8 @@ const boss=(e,w)=>{
       if(T[1]<=0&&!e._atk){T[1]=3;e._atk={k:2,t:.5};e._lhp=e._parts[6]._hp;e._parts[6]._cd=0;ev('cue',e._p,2,.5)}
       if(e._atk&&e._atk.k==2&&e._parts[6]._hp<e._lhp){e._atk=0;e._stg=1;addSpec(1);ev('stagger',e._p)}
     }
-  }else{ // eclipse
-    if(e._ph==1){
-      T[0]-=w;
-      if(e._open>0){e._open-=w;e._inv=0;if(e._open<=0){e._inv=1;e._spawned=0;T[0]=0;ev('eye',e._p,0,0)}}
-      else{e._inv=1;
-        if(e._spawned<4&&T[0]<=0){T[0]=4;const b=e._by+(rnd()-.5)*3;const s=spawn(e._spawned%2?2:4,b,8);s._sum=1;e._spawned++}
-        const sw=S._en.filter(x=>x._sum&&x._t==4);
-        if(e._spawned>=3&&sw.every(x=>!alive(x))){e._open=4;e._parts[0]._b=floor(rnd()*7);ev('eye',e._p,e._parts[0]._b,1)}}
-    }else{
-      T[0]-=w;e._parts[0]._b=floor((S._t/2)%7);
-      if(T[0]<=0&&!e._atk){T[0]=3;e._atk={k:3,t:.8};ev('cue',[0,1,-1.8],3,.8)}
-    }
   }
+  if(e._boss==2){if(e._ph==1){T[0]-=w;if(e._open>0){e._open-=w;e._inv=0;if(e._open<=0){e._inv=1;e._spawned=0;T[0]=0;ev('eye',e._p,0,0)}}else{e._inv=1;if(e._spawned<4&&T[0]<=0){T[0]=4;const b=e._by+(rnd()-.5)*3;const s=spawn(e._spawned%2?2:4,b,8);s._sum=1;e._spawned++}const sw=S._en.filter(x=>x._sum&&x._t==4);if(e._spawned>=3&&sw.every(x=>!alive(x))){e._open=4;e._parts[0]._b=floor(rnd()*7);ev('eye',e._p,e._parts[0]._b,1)}}}else{T[0]-=w;e._parts[0]._b=floor((S._t/2)%7);if(T[0]<=0&&!e._atk){T[0]=3;e._atk={k:3,t:.8};ev('cue',[0,1,-1.8],3,.8)}}} //@eclipse
 };
 
 // ---------- waves ----------

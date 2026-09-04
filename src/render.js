@@ -73,8 +73,8 @@ export function rdInit(T,R){
   const th=rdM._th=new G.Group;rdWorld.add(th);th.visible=false;const cl=[];for(let i=0;i<12;i++)cl.push([sph(1.4+i*7%5*.3,10,7),sin(i*2.4)*3.2,cos(i*1.7)*1.6+1.5,cos(i*3.1)*2-1.5]);mesh(merge(cl),em,th);rdM._eye=mesh(sph(.8,16,12),bas(0x14141c),th);
   const gl=rdM._gl=new G.Group;rdWorld.add(gl);gl.visible=false;mesh(merge([[box(1.2,2.4,.8),0,1.6,0],[box(.5,.6,.5),0,3.3,0],[box(.6,.5,.6),-.9,2.8,0],[box(.6,.5,.6),.9,2.8,0],[box(.35,1.6,.35),-1.2,2,0],[box(.35,1.6,.35),1.2,2,0]]),em,gl);
   rdM._gcore=mesh(sph(.5,12,8),bas(0xff3b4a),gl,0,1.5,0);rdM._gcore.visible=false;
-  const ec=rdM._ecl=new G.Group;rdWorld.add(ec);ec.visible=false;mesh(wg(cyl(10,10,.6,32)),em,ec);
-  rdM._mouth=[1,2,3].map(r=>mesh(rg(r-.15,r+.15,24),bas(0x14141c),ec,0,0,.4));rdM._ecore=mesh(sph(.6,12,8),bas(0xff3b4a));rdM._ecore.visible=false;
+  const ec=rdM._ecl=new G.Group;rdWorld.add(ec);ec.visible=false;mesh(wg(cyl(10,10,.6,32)),em,ec); //@eclipse
+  rdM._mouth=[1,2,3].map(r=>mesh(rg(r-.15,r+.15,24),bas(0x14141c),ec,0,0,.4));rdM._ecore=mesh(sph(.6,12,8),bas(0xff3b4a));rdM._ecore.visible=false; //@eclipse
   // ---- effects: particles, rings, crack flash, cue ring, lightning, sweep bar, forge trail, text
   rdPP=new Float32Array(600*3).fill(-99);rdPC=new Float32Array(600*3);rdLife=new Array(600).fill(0);const pg=new G.BufferGeometry;pg.setAttribute('position',new G.BufferAttribute(rdPP,3));pg.setAttribute('color',new G.BufferAttribute(rdPC,3)); //@particles
   rdPts=new G.Points(pg,new G.PointsMaterial({size:.06,vertexColors:true,transparent:true,blending:G.AdditiveBlending,depthWrite:false}));rdPts.frustumCulled=false;rdWorld.add(rdPts); //@particles
@@ -89,7 +89,8 @@ export function rdInit(T,R){
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
 export const rdWeapons=()=>['lance','halo','maul','shards','prism'].filter(k=>rdM[k].visible); // unmangled keys: looked up by name
-const rdHints={1:'Swing the rainbow at the lights.',2:'Hands apart: a hard bar.',3:'A taut bar blocks orbs.',5:'Hold both grips, stretch: Lance.',6:'Grips: raise, slam: Maul.',7:'Grips: circle: Halo.',9:'Grips: cross, pull apart: Shards.',10:'Grips: wring: Prism.'};
+const rdHints={1:'Swing the rainbow at the lights.',5:'Hold both grips, stretch: Lance.',6:'Grips: raise, slam: Maul.',7:'Grips: circle: Halo.'};
+rdHints[9]='Grips: cross, pull apart: Shards.';rdHints[10]='Grips: wring: Prism.'; //@eclipse
 const rdBoss=['THUNDERHEAD','GLOAM','ECLIPSE'];
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
 const aimZ=(o,d)=>o.quaternion.setFromUnitVectors(rdS.set(0,0,1),rdV.set(d[0],d[1],d[2]).normalize());
@@ -117,8 +118,8 @@ export function rdSync(S,ev,dt,mute){
   // ---- forge feedback: the rope turns white, fog darkens (slow-mo is in the sim)
   rdDes+=((S._fg.on?1:0)-rdDes)*min(1,dt*8);rdM._rb.uniforms.d.value=rdM._rbg.uniforms.d.value=rdDes;
   // ---- fog / flashes / dawn
-  const fc=rdFlash>0?0:rdDes>.5?0x030408:S._dark?0x02030a:0x070a14;rdFog.color.lerp(rdC(fc),min(1,dt*6));rdScene.background.copy(rdFog.color);
-  rdFog.far+=((S._dark?4.5:rdDawn>=0?80:40)-rdFog.far)*min(1,dt*(rdDawn>=0?.3:3));if(rdFlash>0)rdFlash-=dt;
+  const fc=rdFlash>0?0:rdDes>.5?0x030408:S._dark?0x02030a:0x0b0f1e;rdFog.color.lerp(rdC(fc),min(1,dt*6));rdScene.background.copy(rdFog.color);
+  rdFog.far+=((S._dark?4.5:rdDawn>=0?80:45)-rdFog.far)*min(1,dt*(rdDawn>=0?.3:3));if(rdFlash>0)rdFlash-=dt;
   if(rdDawn>=0){rdDawn+=dt;rdFog.color.lerp(rdC(0x2a1a2e),dt*.2)}
   // ---- unicorn: breathing, head bob, horn light, motes
   const U=rdM._uni,b=1+.02*sin(S._t*1.2);U.scale.set(b,b,b);U.position.y=S._light<2?-.15:0;rdM._horn.intensity=.6+S._light*.6;
@@ -142,8 +143,7 @@ export function rdSync(S,ev,dt,mute){
     if(e._boss>=0){const g=[rdM._th,rdM._gl,rdM._ecl][e._boss];g.visible=true;setP(g,e._p);g.rotation.y=atan2(e._fw[0],e._fw[2]);
       if(e._boss==0){rdM._eye.material.color.copy(e._open>0?rdCol[e._parts[0]._b]:rdC(0x14141c))}
       if(e._boss==1){for(let i=0;i<6;i++){const q=e._parts[i];place(rdM._plates,pl++,bp(e,q),g.rotation.y,q._hp>0?1.4:0,q._b)}rdM._gcore.visible=e._ph==2;rdM._gcore.material.color.copy(rdCol[e._parts[6]._b])}
-      if(e._boss==2){const op=e._ph==1&&e._open>0;for(const m of rdM._mouth)m.material.color.copy(op?rdCol[e._parts[0]._b]:rdC(0x14141c));
-        rdM._ecore.visible=e._ph==3;if(e._ph==3){setP(rdM._ecore,e._p);rdM._ecore.material.color.copy(rdCol[e._parts[0]._b])}}
+      if(e._boss==2){const op=e._ph==1&&e._open>0;for(const m of rdM._mouth)m.material.color.copy(op?rdCol[e._parts[0]._b]:rdC(0x14141c));rdM._ecore.visible=e._ph==3;if(e._ph==3){setP(rdM._ecore,e._p);rdM._ecore.material.color.copy(rdCol[e._parts[0]._b])}} //@eclipse
       continue}
     const t=e._t,yaw=atan2(-e._p[0],-1.8-e._p[2]),gp=[e._p[0],t?0:e._p[1],e._p[2]];
     if(t==4){for(const q of e._parts)if(ns<40)place(sw,ns++,bp(e,q),0,q._hp>0?1:0,q._b);continue}
@@ -152,11 +152,12 @@ export function rdSync(S,ev,dt,mute){
   }
   for(;n<52;n++){place(eb,n,[0,-9,0],0,0);place(ec,n,[0,-9,0],0,0)}for(;ns<40;ns++)place(sw,ns,[0,-9,0],0,0);flush(eb);flush(ec);flush(sw);
   for(;pl<48;pl++)place(rdM._plates,pl,[0,-9,0],0,0);flush(rdM._plates);
-  if(!boss||boss._boss!=0)rdM._th.visible=false;if(!boss||boss._boss!=1){rdM._gl.visible=false;rdM._gcore.visible=false}if(!boss||boss._boss!=2){rdM._ecl.visible=false;rdM._ecore.visible=false}
+  if(!boss||boss._boss!=0)rdM._th.visible=false;if(!boss||boss._boss!=1){rdM._gl.visible=false;rdM._gcore.visible=false}
+  if(!boss||boss._boss!=2){rdM._ecl.visible=false;rdM._ecore.visible=false} //@eclipse
   // ---- boss cues: lightning bolt, sweep bar, cue ring
   if(rdBolt>0){rdBolt-=dt;rdLine.material.opacity=rdBolt*3;rdLine.scale.x=rdLine.scale.z=.6+Math.random()*.8}else rdLine.visible=false;
-  if(rdBar>0){rdBar-=dt;rdM._bar.material.opacity=.3+.7*(1-rdBar/1.3);rdM._bar.rotation.y+=dt*.5}else rdM._bar.visible=false;
-  if(rdCue>0){rdCue-=dt;rdM._cue.material.opacity=1-rdCue/rdCueT;const s=1+rdCue/rdCueT;rdM._cue.scale.set(s,s,1)}else rdM._cue.visible=false;
+  if(rdBar>0){rdBar-=dt;rdM._bar.material.opacity=.3+.7*(1-rdBar/1.3)}else rdM._bar.visible=false;
+  if(rdCue>0){rdCue-=dt;rdM._cue.material.opacity=1-rdCue/rdCueT}else rdM._cue.visible=false;
   if(rdCrack>0){rdCrack-=dt;if(rdCrack<=0){rdM._crack.visible=false;rdM._crack.scale.setScalar(1)}}
   {const r=rdRing;if(r.life>0){r.life-=dt;const s=(1-r.life/.3)*1.2+.05;r.scale.set(s,s,s);r.material.opacity=r.life/.3;r.lookAt(rdCam.position);r.visible=r.life>0}}
   // ---- particles (build-optional)

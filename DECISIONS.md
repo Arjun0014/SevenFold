@@ -185,3 +185,20 @@ dies to Gloam on every seed; idle bot loses all Light by 19 s.
 | trail/arc/bolt/hints/CSS cut (+ audio) | 50,590 | 35,386 | 17,662 | 13,737 |
 | optional flags: none / particles / audio / both | — | 32,702 / 33,696 / 33,997 / 34,991 | — | 12,901 / 13,189 / 13,407 / 13,695 |
 | **final, level 2, --particles** | 48,594 | 33,928 | 17,005 | **13,244** |
+
+## Post-review changes (2026-09-05, user present)
+
+- Visual pass after the first hands-on look: brighter ambient/directional light,
+  lighter stone/sea/moon palette, lit enemy edges and larger cores, a horse-shaped
+  unicorn at 75 % opacity with bigger motes, objective text on the title
+  ("Guard the unicorn behind you. Pull a trigger.") and in the desktop overlay.
+- User decision: **sound + embers over the third boss.** Sound + embers + Eclipse
+  = 13,765 bytes; the Eclipse is now behind `--eclipse` (lines tagged
+  `//@eclipse`; `WAVES` ends at Gloam and Dawn fires on the last boss id
+  `WAVES.length/4-1`). The sim tests keep running the 12-wave game from `src/`.
+- To get under the limit after the visual pass: F fullscreen key, mouse-wheel
+  Prism roll, two hints, the `local` reference-space fallback, CSS and message
+  trims were removed. Shipped: 13,279 bytes (`node build.js --level 2`).
+- A stale dev server from this session was holding port 8080 with the old
+  serve.js (no CORS rewrite), which is why `localhost:8080/dist/` showed the
+  "needs the hosted Three.js" message; killed and restarted.

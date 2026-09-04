@@ -4,7 +4,7 @@ import {sin,cos,PI,min,max,clamp} from './vec.js';
 import {xrS} from './xr.js';
 
 export const inpO={x:0,z:0,y:0};      // arena origin in world space (x,z) and yaw (XR recentre)
-const inpK={};let inpYaw=0,inpPit=0,inpMb=[0,0],inpSig=0,inpSigT=0,inpRoll=0;
+const inpK={};let inpYaw=0,inpPit=0,inpMb=[0,0],inpSig=0,inpSigT=0;
 const inpHL=[-.25,-.35,.45],inpHR=[.25,-.35,.45]; // desktop hand offsets in head space
 const inpY=-.3,inpZ=.5;
 // canned sigils 1..5 (Shards, Maul, Halo, Prism, Lance): u∈[0,1] → [L,R] in head space
@@ -22,19 +22,18 @@ const inpQy=y=>[0,sin(y/2),0,cos(y/2)];
 let inpLast={L:{p:[-.3,1.2,.3],q:[0,1,0,0],t:0,g:0},R:{p:[.3,1.2,.3],q:[0,1,0,0],t:0,g:0}}; // last XR hand poses (frozen on disconnect)
 
 export function inpInit(cv){
-  onkeydown=e=>{inpK[e.code]=1;const k=e.key.toLowerCase();if(k>='1'&&k<='5')inpSigil(+k);if(k==' ')e.preventDefault();if(k=='r'||k=='m'||k=='f')inpKeys[k]=1};
+  onkeydown=e=>{inpK[e.code]=1;const k=e.key.toLowerCase();if(k>='1'&&k<='5')inpSigil(+k);if(k==' ')e.preventDefault();if(k=='r'||k=='m')inpKeys[k]=1};
   onkeyup=e=>{inpK[e.code]=0};
   cv.onmousedown=e=>{inpMb[e.button==2?1:0]=1;if(cv.requestPointerLock)cv.requestPointerLock()};
   onmouseup=e=>{inpMb[e.button==2?1:0]=0};
   cv.oncontextmenu=e=>e.preventDefault();
   onmousemove=e=>{if(document.pointerLockElement==cv){inpYaw-=e.movementX*.003;inpPit=clamp(inpPit-e.movementY*.003,-1.4,1.4)}};
-  onwheel=e=>{inpRoll+=(e.deltaY>0?1:-1)*2*PI/7};
 }
 // Poll once per sim step. cam = the Three camera (XR-updated when presenting). dt = DT.
 export function inpPoll(cam,dt){
   if(xrS.on){
-    const O=inpO,c=cos(O.y),s=sin(O.y),qo=inpQy(-O.y),lift=xrS.lo?1.6:0;
-    const ta=p=>{const x=p.x-O.x,z=p.z-O.z;return[c*x-s*z,p.y+lift,s*x+c*z]},qa=q=>inpQm(qo,[q.x,q.y,q.z,q.w]);
+    const O=inpO,c=cos(O.y),s=sin(O.y),qo=inpQy(-O.y);
+    const ta=p=>{const x=p.x-O.x,z=p.z-O.z;return[c*x-s*z,p.y,s*x+c*z]},qa=q=>inpQm(qo,[q.x,q.y,q.z,q.w]);
     const H={p:ta(cam.position),q:qa(cam.quaternion)};
     let n=0;for(const h of xrS.h){if(!h.on)continue;const k=h.hand=='left'?'L':h.hand=='right'?'R':n?'L':'R';n++;
       inpLast[k]={p:ta(h.g.position),q:qa(h.g.quaternion),t:h.t,g:h.q}}
@@ -47,6 +46,6 @@ export function inpPoll(cam,dt){
   const H={p:[0,1.6,0],q:[cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]};
   let l=inpHL,r=inpHR,g=K.Space?1:0;
   if(inpSig){inpSigT+=dt;const u=min(1,inpSigT/.6);[l,r]=inpGens[inpSig-1](u);g=1;if(u>=1){inpSig=0;inpHL.splice(0,3,...l);inpHR.splice(0,3,...r)}}
-  const q=inpQy(inpYaw+PI),qr=inpQm(q,[0,0,sin(inpRoll/2),cos(inpRoll/2)]);
-  return{L:{p:inpToA(l,inpYaw),q,t:inpMb[1],g},R:{p:inpToA(r,inpYaw),q:qr,t:inpMb[0],g},H};
+  const q=inpQy(inpYaw+PI);
+  return{L:{p:inpToA(l,inpYaw),q,t:inpMb[1],g},R:{p:inpToA(r,inpYaw),q,t:inpMb[0],g},H};
 }

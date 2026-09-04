@@ -37,23 +37,25 @@ not the install). `node test/browser.test.js firefox` will run the same 13
 desktop tests on any machine where Playwright's Firefox launches — please run it
 once. Chromium: 14/14 green, three runs in a row.
 
-Optional: if you prefer sound over hit embers, build with
-`node build.js --level 2 --audio` (13,4xx bytes with both — does not fit; audio
-alone fits under the limit but the priority order in CLAUDE.md puts particles
-first). See DECISIONS.md.
+Shipped configuration (chosen 2026-09-05): **sound + hit embers, waves 1–8,
+Thunderhead and Gloam; Dawn after Gloam.** The Eclipse (waves 9–12) is in the
+source and tests but not in the zip: sound + embers + Eclipse is 13,765 bytes.
+`node build.js --level 2 --eclipse --no-audio` builds the three-boss silent
+variant (13,3xx — over the limit after the visual pass; not shippable as is).
 
 ## 1. Final size
 
 | step | bytes |
 |---|---|
-| source, concatenated | 48,594 |
-| terser (property-mangled) | 33,928 |
-| roadroller -O2 | 17,005 |
-| index.html (inlined) | 17,637 |
-| **dist/sevenfold.zip** | **13,244** (limit 13,312; margin 68) |
+| source, concatenated | 47,984 |
+| terser (property-mangled) | 33,342 |
+| roadroller -O2 | 17,066 |
+| index.html (inlined) | 17,658 |
+| **dist/sevenfold.zip** | **13,279** (limit 13,312; margin 33) |
 
-Per module (minified alone): sim 14,852 · render 12,554 · main 2,671 ·
-input 2,270 · xr 1,154 · vec 821 · audio (not shipped) ~1,300.
+Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
+zip by ±15 bytes. The committed zip is the measured one; `build.js` fails above
+the limit, so a rebuild can never ship an oversized file unnoticed.
 
 `unzip -l` → one entry, `index.html`. `unzip -t` → no errors. The only URL in
 `dist/index.html` is `https://play.js13kgames.com/2026/webxr/three.js`, kept in
@@ -68,22 +70,27 @@ plaintext outside the packed script. No `console.`, no `localStorage.clear`.
 | `src/input.js` | desktop controls, canned sigils, XR pose → arena space (recentre) |
 | `src/xr.js` | hand-written WebXR bootstrap: ENTER VR button, session, local-floor (falls back to local +1.6 m), controllers, select/squeeze, haptics |
 | `src/render.js` | Three.js scene: altar + rune rings, ruins, cloud-sea, moon, unicorn, instanced enemies, rainbow shader (rope tube + weapons), bosses, effects, text plane |
-| `src/audio.js` | optional Web Audio synth (`--audio`) |
+| `src/audio.js` | Web Audio synth: drone, rope hum, blips pitched by band (`--no-audio` removes it) |
 | `src/main.js` | dynamic import of the hosted Three.js, loop, `window.SF` test hook, persistence |
 
 ## 3. Cuts (CLAUDE.md priority order, from the bottom)
 
 - 7 Endless mode and combo scoring: cut (Dawn ends the run; trigger restarts).
 - 6 Hit-stop, dissolve, forge trail, Dawn rainbow arc, dust, sky gradient: cut.
-  Particles kept (shipped with `--particles`). Unicorn breathing/head-lowering kept.
-- 5 Sound: not in the shipped zip (does not fit next to particles). A 1.3 KB
-  synth exists behind `--audio`. ZzFX and positional audio were never built.
+  Hit embers kept. Unicorn breathing/head-lowering kept.
+- 5 Sound: a ~1 KB Web Audio synth (drone, rope hum, band-pitched blips for
+  crack/hit/resonant/forge/kill/Light/wave/cue) is shipped. ZzFX and positional
+  audio were never built.
 - 4 Colour resonance: kept in full.
-- 3 All three bosses kept. Eclipse phase 2 (tentacles / gravity pulse) merged
-  into phase 3 per docs/06 step 6; Gloam's stoop and the Maul-only chest plates
-  replaced by resonant-arrow plates (a 2.2 m Lance cannot reach 3.2 m plates from
-  a 1 m play radius). Swarm hand-stings simplified to orbit-then-dive.
-- Also cut: the whip "catch a Wisp and fling it" slingshot (never exercised).
+- 3 **Eclipse dropped from the zip** (docs/06 step 6) at the user's decision on
+  2026-09-05, in favour of sound + embers: Dawn after Gloam, waves 1–8. It stays
+  in `src/` and the tests (`--eclipse`). Gloam's stoop and the Maul-only chest
+  plates replaced by resonant-arrow plates (a 2.2 m Lance cannot reach 3.2 m
+  plates from a 1 m play radius). Swarm hand-stings simplified to orbit-then-dive.
+- Also cut: the whip "catch a Wisp and fling it" slingshot, the F fullscreen
+  key, the desktop mouse-wheel Prism roll, and the `local` reference-space
+  fallback (every current runtime supports `local-floor`; failure returns to
+  the desktop button).
 
 ## 4. Submission description (≤ 500 chars)
 
@@ -91,11 +98,11 @@ plaintext outside the packed script. No `console.`, no `localStorage.clear`.
 > arc that strikes and blocks; draw it like a bow. Squeeze both grips and time
 > slows: trace a sigil to forge it into a Lance, Halo, Maul, twin Shards or a
 > Prism beam. Red is at your left hand, violet at your right — how you swing is
-> how you aim, and every enemy has a colour it cannot bear. Twelve waves and
-> three storm-giants come across the cloud-sea for the unicorn behind you. Hold
-> the light until dawn.
+> how you aim, and every enemy has a colour it cannot bear. Eight waves and two
+> storm-giants come across the cloud-sea for the unicorn behind you. Hold the
+> light until dawn.
 
-(489 characters)
+(485 characters)
 
 ## 5. WebXR category checklist
 
@@ -103,7 +110,7 @@ plaintext outside the packed script. No `console.`, no `localStorage.clear`.
 - [x] Zip ≤ 13,312 bytes with `index.html` at top level, everything inlined
 - [x] Only external resource: the hosted Three.js core module; no addons/JSM
 - [x] Runs offline apart from that file; no analytics; no other network calls
-- [x] `requestSession` only from a click; `local-floor` with `local` fallback
+- [x] `requestSession` only from a click; `local-floor` reference space
 - [x] Input: head pose, two hand poses, select, squeeze only; hand tracking
       forge = both pinches held 0.4 s with hands within 0.3 m
 - [x] Player never moved; camera never taken; recentre on the first trigger
@@ -125,11 +132,11 @@ plaintext outside the packed script. No `console.`, no `localStorage.clear`.
 | `node test/browser.test.js chromium --xr` | 14/14 ×3 (boot, replay to wave 3, budget, 5 forges, crack/arrow/block, game over + R, resize/fullscreen, mute + best score, offline message, XR shim enter/sigil/exit) |
 | `node test/browser.test.js firefox` | not run: Firefox cannot start on this machine |
 
-Perfect-bot clear times (seed: Thunderhead / Gloam / Eclipse, seconds):
+Perfect-bot clear times (seed: Thunderhead / Gloam / Eclipse, seconds; the sim
+tests still run the full 12-wave game):
 1: 70.6 / 47.4 / 43.7 · 2: 46.5 / 46.5 / 43.0 · 3: 57.9 / 46.6 / 43.7 ·
 4: 58.2 / 46.4 / 43.4 · 5: 70.3 / 47.3 / 44.0. Every boss phase is entered on
-every seed (Thunderhead eye windows, Gloam phase 2, Eclipse phase 3). Normal
-waves 16–35 s. The wrong-tool bot (no forging) clears waves 1–7 and dies to
+every seed. Normal waves 16–35 s. The wrong-tool bot (no forging) clears waves 1–7 and dies to
 Gloam; the idle bot loses all Light by 19 s.
 
 Screenshot for the form: `test-results/chromium-forge-halo.png` or

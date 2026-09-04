@@ -24,8 +24,11 @@ mouse            look (click the canvas for pointer lock)
 WASD / QE        move the right hand (x/z, y)      IJKL / UO   move the left hand
 LMB / RMB        right / left trigger              Space       both grips (forge)
 1 2 3 4 5        canned sigils: Shards, Maul, Halo, Prism, Lance
-mouse wheel      roll the right hand (Prism band)  R restart   M mute   F fullscreen
+R restart        M mute
 ```
+
+The unicorn you are guarding stands **behind** you: turn around to see it and
+its five Light motes. Enemies come from the front and the sides toward it.
 
 ## The rainbow
 
@@ -58,26 +61,30 @@ the Maul. *How* you swing — which end leads — is aiming.
 
 ## Waves
 
-12 waves across three storm-giants: **Thunderhead** (wave 4, eye opens — shoot it),
-**Gloam** (wave 8, six coloured plates, then a Lance duel), **Eclipse** (wave 12,
-summons, then a light-eater pulse you shield with the taut rope or Lance across
-the unicorn). Five Light. Dawn comes after the Eclipse.
+Eight waves across two storm-giants: **Thunderhead** (wave 4, its eye opens —
+shoot it) and **Gloam** (wave 8, six coloured plates, then a Lance duel). Five
+Light. Dawn comes when Gloam falls.
+
+A third boss, the **Eclipse** (waves 9–12: summons, then a light-eater pulse you
+shield with the taut rope or Lance across the unicorn), is fully implemented and
+tested but does not fit the 13 KB limit together with sound and hit embers; build
+with `--eclipse --no-audio` to play it.
 
 ## Build and test
 
 ```
 npm install                 # terser, roadroller, @gfx/zopfli, playwright, three (API reference only)
 npx playwright install chromium firefox
-node build.js --level 2 --particles      # dist/index.html + dist/sevenfold.zip, size table, gate
+node build.js --level 2                  # dist/index.html + dist/sevenfold.zip, size table, gate
 node test/sim.test.js                    # 109 Node tests: rope, forms, recogniser, weapons, bots
 node test/browser.test.js chromium --xr  # Playwright: built page in desktop mode + XR shim
 node test/browser.test.js                # chromium and firefox
 npm run dev                              # http://localhost:8080/  (dev shell: index.html, tools/play.html)
 ```
 
-Build flags: `--particles` (hit embers, on in the shipped zip), `--audio`
-(tiny Web Audio synth; does not fit the limit together with particles — see
-DECISIONS.md), `--level 0|1|2` (roadroller effort), `--no-roll`.
+Build flags: `--no-audio`, `--no-particles` (both features are on by default),
+`--eclipse` (third boss, waves 9–12; needs `--no-audio` to fit),
+`--level 0|1|2` (roadroller effort), `--no-roll`. See DECISIONS.md.
 
 Local note: the hosted Three.js has no CORS header, so pages on localhost cannot
 import it cross-origin. The dev server serves a byte-identical local copy under

@@ -9,11 +9,11 @@ mAu=auInit;mAuS=auSync; //@audio
 import {yawOf} from './vec.js';
 
 const mU=document.getElementById('u'),mB=document.createElement('button'),mH=document.createElement('div');
-mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Guard the unicorn behind you (turn around). Mouse look · WASD/QE + IJKL/UO hands · LMB/RMB triggers · Space forge · 1-5 sigils · R restart · M mute';
+mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Guard the unicorn behind you. Mouse look · WASD/QE IJKL/UO hands · LMB/RMB triggers · Space forge · 1-5 sigils · R restart · M mute';
 document.body.append(mB,mH);
 let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
 let R;try{R=new T.WebGLRenderer({antialias:true})}catch(e){}
-if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'Sevenfold needs WebGL.':'Sevenfold needs the hosted Three.js file from play.js13kgames.com — check the connection and reload.'}
+if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'Sevenfold needs WebGL.':'Sevenfold could not load Three.js from play.js13kgames.com. Check the connection and reload.'}
 else{
   R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.setSize(innerWidth,innerHeight);document.body.append(R.domElement);
   let seed=Date.now()>>>10,sim=createSim(seed),acc=0,last=0,evLog=[],started=0,mute=0;
@@ -26,13 +26,12 @@ else{
   const SF=window.SF={manual:0,rec:0,
     get sim(){return sim},inject:(L,R_,H)=>sim.inject(L,R_,H),step:n=>sim.step(n),sigil:inpSigil,orb:(p,v,b)=>sim._pr.push({p,v,b}),
     newGame:s=>{sim=createSim(s);evLog=[];started=1;mB.hidden=true;return sim},
-    state:()=>({wave:sim._wave,ws:sim._ws,weapon:WN[sim._wp],light:sim._light,score:sim._score,xr:xrS.on,calls:R.info.render.calls,tris:R.info.render.triangles,meshes:rdWeapons(),events:evLog.slice(-300),text:rdM.text,mute})};
+    state:()=>({wave:sim._wave,ws:sim._ws,weapon:WN[sim._wp],light:sim._light,xr:xrS.on,calls:R.info.render.calls,tris:R.info.render.triangles,meshes:rdWeapons(),events:evLog.slice(-300),text:rdM.text,mute})};
   xrInit(R,mB,()=>{started=1;mH.hidden=xrS.sup;mAu()},()=>{mH.hidden=false;inpO.x=inpO.z=inpO.y=0;world.position.set(0,0,0);world.rotation.y=0});
   R.setAnimationLoop(t=>{
     const dt=Math.min(.1,(t-last)/1000||0);last=t;
     if(inpKeys.r){inpKeys.r=0;sim._init();sim._ws=2;sim._wt=1;evLog=[]}
     if(inpKeys.m){inpKeys.m=0;mute=!mute;try{localStorage.setItem('sevenfold_mute',mute?'1':'0')}catch(e){}}
-    if(inpKeys.f){inpKeys.f=0;try{document.fullscreenElement?document.exitFullscreen():document.body.requestFullscreen()}catch(e){}}
     if(started&&!SF.manual){acc+=dt;let n=0;
       while(acc>=DT&&n<6){const i=inpPoll(cam,DT);if(SF.rec)SF.rec.push(i);
         if(xrS.on&&sim._ws==0&&(i.L.t||i.R.t))recentre();
