@@ -6,7 +6,7 @@ import {xrS} from './xr.js';
 export const inpO={x:0,z:0,y:0};      // arena origin in world space (x,z) and yaw (XR recentre)
 const inpK={};let inpYaw=0,inpPit=0,inpMb=[0,0],inpSig=0,inpSigT=0,inpRoll=0;
 const inpHL=[-.25,-.35,.45],inpHR=[.25,-.35,.45]; // desktop hand offsets in head space
-const inpY=-.4,inpZ=.4;
+const inpY=-.3,inpZ=.5;
 // canned sigils 1..5 (Shards, Maul, Halo, Prism, Lance): u∈[0,1] → [L,R] in head space
 const inpGens=[
   u=>{const x=-.15+.5*u;return[[-x,inpY,inpZ],[x,inpY,inpZ]]},

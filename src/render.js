@@ -35,7 +35,7 @@ export function rdInit(T,R){
   rdScene=new T.Scene;rdWorld=new T.Group;rdScene.add(rdWorld);
   rdFog=rdScene.fog=new T.Fog(0x070a14,6,40);rdScene.background=rdC(0x070a14);
   rdCam=new T.PerspectiveCamera(90,innerWidth/innerHeight,.05,300);rdCam.position.set(0,1.6,0);rdCam.rotation.order='YXZ';rdCam.rotation.y=PI;
-  rdScene.add(new T.AmbientLight(0x304060,.8));const dl=new T.DirectionalLight(0x8090c0,1.2);dl.position.set(-40,60,-80);rdScene.add(dl);
+  rdScene.add(new T.AmbientLight(0x304060,.8));const dl=new T.DirectionalLight(0x8090c0,1.2);dl.position.set(30,60,100);rdScene.add(dl);
   const G=T,sph=(r,a=10,b=7)=>new G.SphereGeometry(r,a,b),box=(x,y,z)=>new G.BoxGeometry(x,y,z),cyl=(a,b,h,s=8)=>new G.CylinderGeometry(a,b,h,s),rg=(a,b,s=32)=>new G.RingGeometry(a,b,s);
   const stone=lam(0x12141c,1,0x07080f);
   // ---- arena: altar, rune rings, ruins, cloud-sea, sky, moon, dust
@@ -46,7 +46,7 @@ export function rdInit(T,R){
   mesh(merge(ruins),stone);
   const sea=new G.PlaneGeometry(140,140,36,36);{const p=sea.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,sin(p.getX(i)*.6)*sin(p.getY(i)*.45)*.5)}sea.computeVertexNormals();
   mesh(sea,lam(0x0b0e1a,1,0x04050a),0,0,-.5,0).rotation.x=-PI/2;
-  rdM._moon=mesh(sph(40,24,16),new G.MeshLambertMaterial({color:0x23242c,fog:false}),0,-60,90,-100);
+  rdM._moon=mesh(sph(40,24,16),new G.MeshLambertMaterial({color:0x23242c,fog:false}),0,70,80,120);
   // ---- unicorn (primitives), horn light, motes
   const um=lam(0xdfe6ff,.45,0x303848),U=rdM._uni=new G.Group;U.position.set(0,0,-1.8);U.rotation.y=-PI*.5;rdWorld.add(U);
   const parts=[[box(1.1,.5,.4),0,.9,0],[box(.4,.32,.28),.7,1.3,0],[cyl(.06,.06,.7,6),-.4,.35,.12],[cyl(.06,.06,.7,6),-.4,.35,-.12],[cyl(.06,.06,.7,6),.4,.35,.12],[cyl(.06,.06,.7,6),.4,.35,-.12],[box(.3,.28,.25),.5,1.05,0]];
@@ -66,7 +66,7 @@ export function rdInit(T,R){
   rdM.prism=new G.Group;rdWorld.add(rdM.prism);mesh(withS(new G.OctahedronGeometry(.12),(x,y)=>(y+.12)/.24),rdM._rb,rdM.prism);rdM._beam=mesh(wg(cyl(.05,.05,12,6)),bas(0xffffff,.6,1),rdM.prism,0,0,6);
   // ---- enemies: instanced bodies + cores; shell plates pool (also Gloam plates & Eclipse tentacles)
   const em=lam(0x05060a,1,0x101422),cm=bas(0xffffff);
-  rdM._eb=inst(sph(1,10,7),em,52);rdM._ec=inst(sph(.1,6,4),cm,52);rdM._sw=inst(sph(.1,6,4),cm,40);
+  rdM._eb=inst(sph(1,10,7),em,52);rdM._ec=inst(sph(.1,8,6),cm,52);rdM._sw=inst(sph(.1,6,4),cm,40);
   rdM._plates=inst(cyl(.2,.2,.1,6),bas(0xffffff),48);
   // ---- bosses
   const th=rdM._th=new G.Group;rdWorld.add(th);th.visible=false;const cl=[];for(let i=0;i<12;i++)cl.push([sph(1.4+i*7%5*.3,10,7),sin(i*2.4)*3.2,cos(i*1.7)*1.6+1.5,cos(i*3.1)*2-1.5]);mesh(merge(cl),em,th);rdM._eye=mesh(sph(.8,16,12),bas(0x14141c),th);

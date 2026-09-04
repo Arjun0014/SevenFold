@@ -14,7 +14,7 @@
     getPose(space){return{transform:{matrix:mat(space.h=='left'?st.L:st.R)}}}}
   class Sess{constructor(){this.l={};this.inputSources=srcs;this.renderState={baseLayer:null,layers:undefined,depthNear:.1,depthFar:1000};this.visibilityState='visible';this.environmentBlendMode='opaque';this.enabledFeatures=['local-floor'];this.ended=false;this.announced=false}
     addEventListener(k,f){(this.l[k]=this.l[k]||[]).push(f)}removeEventListener(k,f){this.l[k]=(this.l[k]||[]).filter(x=>x!==f)}
-    dispatch(k,e){for(const f of(this.l[k]||[]).slice())f(Object.assign({type:k,session:this},e))}
+    dispatch(k,e){for(const f of(this.l[k]||[]).slice())f(Object.assign({type:k,session:this,frame:new Frame(this)},e))}
     updateRenderState(s){Object.assign(this.renderState,s)}updateTargetFrameRate(){}
     async requestReferenceSpace(type){if(type!='local-floor'&&type!='local'&&type!='viewer')throw new Error('unsupported reference space');return{type}}
     requestAnimationFrame(cb){return requestAnimationFrame(t=>{if(this.ended)return;if(!this.announced){this.announced=true;this.dispatch('inputsourceschange',{added:srcs,removed:[]})}
@@ -25,6 +25,8 @@
   window.XRWebGLLayer=class{constructor(s,gl){this.framebuffer=null;this.framebufferWidth=gl.drawingBufferWidth;this.framebufferHeight=gl.drawingBufferHeight;this.ignoreDepthValues=false;this.fixedFoveation=1}
     getViewport(v){const w=this.framebufferWidth/2;return{x:v.eye=='right'?w:0,y:0,width:w,height:this.framebufferHeight}}};
   for(const C of[window.WebGL2RenderingContext,window.WebGLRenderingContext])if(C)C.prototype.makeXRCompatible=async function(){};
+  // Chromium has a real XRWebGLBinding that rejects a fake session; Three only needs it for layers/depth sensing, so hide it
+  try{delete window.XRWebGLBinding}catch(e){}if(typeof XRWebGLBinding!='undefined')window.XRWebGLBinding=undefined;
   Object.defineProperty(navigator,'xr',{value:{isSessionSupported:async()=>true,requestSession:async()=>st.session=new Sess,addEventListener(){},removeEventListener(){}},configurable:true});
   const src=h=>srcs[h=='left'?0:1];
   window.__xr={

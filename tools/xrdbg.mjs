@@ -4,7 +4,7 @@ const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader',
 p.on('console',m=>console.log('console',m.type(),m.text().slice(0,300)));p.on('pageerror',e=>console.log('pageerror',e.message.slice(0,300)));
 await p.route('https://play.js13kgames.com/2026/webxr/three.js',r=>r.fulfill({path:'tools/three-hosted-r185.js',contentType:'text/javascript'}));
 await p.addInitScript({path:'test/xr-shim.js'});
-await p.goto('http://localhost:8093/');await p.waitForFunction(()=>window.SF,{timeout:20000});
+console.log("goto");await p.goto("http://localhost:8093/",{timeout:15000});console.log("loaded");await p.waitForFunction(()=>window.SF,{timeout:15000});
 console.log('button',await p.textContent('#b'));
 await p.click('#b');
 for(let i=0;i<6;i++){await p.waitForTimeout(500);console.log(await p.evaluate(()=>JSON.stringify({xr:SF.state().xr,shim:__xr.state(),ws:SF.state().ws,hidden:document.getElementById('b').hidden})))}

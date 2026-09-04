@@ -21,7 +21,7 @@ if(/three\/addons|\/jsm\//.test(raw)){console.error('FAIL: addons/jsm reference 
 writeFileSync('dist/bundle.raw.js',raw);
 
 // 2. terser
-const tOpts={compress:{passes:5,unsafe:true,unsafe_math:true,unsafe_arrows:true,unsafe_methods:true,unsafe_proto:true,toplevel:true,drop_console:true,pure_getters:true,booleans_as_integers:true,hoist_funs:true,ecma:2020},
+const tOpts={compress:{passes:5,unsafe:true,unsafe_math:true,unsafe_arrows:true,unsafe_methods:true,unsafe_proto:true,toplevel:true,drop_console:true,pure_getters:true,hoist_funs:true,ecma:2020}, // no booleans_as_integers: Three tests `=== false`/`=== true`
   mangle:{toplevel:true,properties:{regex:/^_/}},format:{comments:false,ecma:2020},module:false};
 const min=(await minify(raw,tOpts)).code;
 writeFileSync('dist/bundle.min.js',min);

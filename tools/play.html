@@ -1,0 +1,14 @@
+<!doctype html><meta charset=utf-8><title>Sevenfold — authoring page</title>
+<style>body{margin:0;background:#070a14;color:#dfe6ff;font:14px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;font-size:12px;opacity:.6}#u{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:20px}
+#rec{position:fixed;right:8px;top:8px;font-size:12px;background:#12141c;padding:6px;border:1px solid #2b3150}#rec button{margin:2px}</style>
+<div id=u></div>
+<div id=rec>recorder: <button onclick="SF.rec=[]">start</button><button onclick="dump()">stop → console</button> <span id=n></span></div>
+<script>U='https://play.js13kgames.com/2026/webxr/three.js'</script>
+<script type=module src=../src/main.js></script>
+<script>
+// Records the hand/head stream that input.js feeds the sim (one entry per sim step) and dumps it as JSON in the
+// format test/replays/*.json uses: [Lp,Lq,Lt,Lg,Rp,Rq,Rt,Rg,Hp,Hq]. Paste into a file to author bot scripts or replays.
+const rd=x=>Math.round(x*1000)/1000;
+function dump(){const fr=(SF.rec||[]).map(f=>[f.L.p.map(rd),f.L.q.map(rd),+!!f.L.t,+!!f.L.g,f.R.p.map(rd),f.R.q.map(rd),+!!f.R.t,+!!f.R.g,f.H.p.map(rd),f.H.q.map(rd)]);SF.rec=0;console.log(JSON.stringify({seed:SF.sim._seed,frames:fr}));document.getElementById('n').textContent=fr.length+' frames dumped'}
+setInterval(()=>{if(window.SF&&SF.rec)document.getElementById('n').textContent=SF.rec.length+' frames'},500);
+</script>

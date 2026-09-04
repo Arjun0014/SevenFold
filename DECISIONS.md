@@ -91,3 +91,97 @@ dies to Gloam on every seed; idle bot loses all Light by 19 s.
 
 ### Size log
 (sim.js is not yet built; first measurement after Phase 2.)
+
+## Phase 2 — Render / XR / desktop (2026-09-04)
+
+- Modules share one scope in the build (imports stripped), so every top-level
+  name is prefixed per module (`rd*`, `inp*`, `xr*`, `au*`, `m*`). The Three.js
+  namespace is `T` in main and `rdT` in render.
+- The hosted URL is a plain global `U` defined *outside* the roadroller payload
+  (`U="https://play.js13kgames.com/2026/webxr/three.js"`), so the grep check
+  finds exactly one URL and judges can read it; the packed code does `import(U)`.
+- XR poses are converted to arena space through a recentre transform
+  (`inpO`: origin + yaw) taken on the first `select` at the title screen; the
+  scene root group carries the inverse. The player is never moved.
+- No pose interpolation between sim steps (90 Hz sim vs 72–120 Hz display):
+  measured jitter is sub-pixel; the `alpha` from the accumulator is unused.
+- Enemies: one instanced sphere with per-type non-uniform scale (silhouettes),
+  one instanced core sphere coloured by weakness band, one plate pool (Shells
+  and Gloam), one swarm pool. Bosses are merged geometries (custom `merge`,
+  no BufferGeometryUtils). 18–26 draw calls.
+- Rope: `TubeGeometry` over a `CatmullRomCurve3` of the 29 sim points, rebuilt
+  each frame; its built-in `uv.x` drives the band shader, and weapon geometries
+  write their band parameter into `uv.x` too. The shader indexes `vec3 c[7]`
+  dynamically (WebGL2 everywhere Three r185 runs).
+- The hosted three.js sends **no `Access-Control-Allow-Origin`**: a cross-origin
+  module import from localhost fails in every browser. The entry is same-origin
+  on play.js13kgames.com, so production is fine. `tools/serve.cjs` rewrites the
+  URL to a local byte-identical copy for pages it serves (dev + emulator
+  checklist); the browser tests route the URL the same way and serve the dist
+  unrewritten (`NO_REWRITE=1`).
+- terser: `booleans_as_integers` must stay **off** — Three tests
+  `visible === false` / `transparent === true`; with it on, hidden bosses
+  rendered (the "wings" bug) and blending broke. `unsafe`, `unsafe_math`,
+  `unsafe_methods`, `unsafe_proto`, `hoist_funs`, 5 passes are on.
+- Any property looked up by *string* must not be `_`-prefixed (the mangler
+  cannot see it): weapon meshes are `rdM.lance` etc.; the bow stores the hand
+  object, not `'_L'`.
+- Hand teleport > 0.5 m/step resets the rope (controller reconnect); canned
+  desktop sigils end 31° below eye level so the forged weapon is in view.
+
+## Phase 3/4 — Tests (2026-09-05)
+
+- Browser suite runs the unzipped `dist/sevenfold.zip` from a temp dir through
+  the dev server. Replay `test/replays/w1-2.json` is the recorded perfect-bot
+  input for waves 1–2 (seed 1), injected through `window.SF` with the loop in
+  manual mode; the same page then exercises keys 1–5, injection, game over,
+  R, resize/fullscreen, mute/best persistence and the offline message.
+- XR shim (`test/xr-shim.js`) works with Three r185's `WebXRManager`. What had
+  to be faked beyond docs/07 C: `session.visibilityState`, an `inputsourceschange`
+  event with `added` (dispatched on the first `requestAnimationFrame`, after
+  Three has subscribed), `frame` on every select/squeeze event (Three calls
+  `controller.update(event.inputSource, event.frame, …)`), and hiding
+  Chromium's real `XRWebGLBinding` (Three constructs one with the fake session
+  and the native class rejects it). `XRWebGLLayer.framebuffer = null` +
+  per-eye viewports is enough. Result: enter → 300 frames → select starts the
+  game (recentre) → Lance sigil through fake grips with both squeezes → weapon
+  `lance` → `session.end()` → desktop mode, zero errors.
+- Firefox: Playwright's Firefox (1538, and the older beta 1526) cannot start on
+  this Windows 11 26200 machine — side-by-side error "Dependent Assembly
+  mozglue could not be found"; files match a fresh download. Tests support
+  firefox and report it; recorded as a manual item in SUBMISSION.md.
+
+## Phase 5/6 — Audio and size (2026-09-05)
+
+- First full build: 14,981 bytes zipped, no audio. Roadroller -O2 saves only
+  ~40 bytes over -O0 on this code, so minified size is the lever.
+- Structural savings: build-stripped test hooks (`//@test` lines: hashState,
+  spawn hooks, recogniser features), mangled `rdM._*` keys, sky dome / dust /
+  ring pool / lightning line pool / forge trail / Dawn arc removed, one
+  instanced body geometry for all enemies, TubeGeometry rope, table-driven key
+  map, `Object.assign`-style inject, Thunderhead 12 spheres, shorter hints/CSS.
+- Feature cuts, in the CLAUDE.md order: endless + combo (7); hit-stop, dissolve,
+  trail, dust (6); sound (5) is a 1.3 KB Web Audio synth behind `--audio` —
+  particles + audio = 13,695, audio alone 13,4xx, particles alone 13,244,
+  neither 12,901. Following "cut from the bottom", particles (6) stay and sound
+  (5) is out. Eclipse phase 2 merged into phase 3 (docs/06 step 6) rather than
+  dropping the boss; Swarm stings and the Wisp slingshot were cut as untested
+  sub-mechanics.
+- Shipped build: `node build.js --level 2 --particles` → **13,244 bytes**
+  (68 under the limit; above the 12,900 working target — accepted because the
+  build is deterministic and gated, and the alternative was shipping without
+  hit feedback).
+
+### Size log
+
+| step | raw | min | rolled | zip |
+|---|---|---|---|---|
+| Phase 2 first build (level 0) | 55,347 | 40,050 | 19,289 | 14,981 |
+| test hooks stripped, slingshot cut | 54,125 | 39,061 | — | — |
+| rdM mangled, sky/dust/rings cut | 53,668 | 38,113 | 18,549 | 14,425 |
+| shader index, geometry trims | 53,108 | 37,596 | 18,412 | 14,325 |
+| endless/combo/darts/Eclipse-p2 cut, one body, tube rope | 50,255 | 35,344 | 17,503 | 13,640 |
+| micro cuts, terser passes | 50,009 | 35,080 | 17,428 | 13,587 |
+| trail/arc/bolt/hints/CSS cut (+ audio) | 50,590 | 35,386 | 17,662 | 13,737 |
+| optional flags: none / particles / audio / both | — | 32,702 / 33,696 / 33,997 / 34,991 | — | 12,901 / 13,189 / 13,407 / 13,695 |
+| **final, level 2, --particles** | 48,594 | 33,928 | 17,005 | **13,244** |
