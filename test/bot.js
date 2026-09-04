@@ -6,7 +6,7 @@ import {DT,N} from '../src/sim.js';
 import {SIGILS,toArena} from './trajectories.js';
 
 const UP=[0,1,0],UNI=[0,1,-1.8];
-const HAND_SPD=5,HEAD_SPD=2,REACH=1.15,PLAY_R=1,AIM=30,THINK=25; // aim hold 0.33 s, reaction 0.28 s
+const HAND_SPD=5,HEAD_SPD=2,REACH=1.15,PLAY_R=1,AIM=24,THINK=14; // aim hold 0.27 s, reaction 0.16 s
 // quaternion from orthonormal columns (x,y,z) of a rotation matrix
 const mat2q=(x,y,z)=>{const t=x[0]+y[1]+z[2];let q;if(t>0){const s=sqrt(t+1)*2;q=[(y[2]-z[1])/s,(z[0]-x[2])/s,(x[1]-y[0])/s,.25*s]}
   else if(x[0]>y[1]&&x[0]>z[2]){const s=sqrt(1+x[0]-y[1]-z[2])*2;q=[.25*s,(x[1]+y[0])/s,(z[0]+x[2])/s,(y[2]-z[1])/s]}
@@ -63,7 +63,23 @@ export function makeBot(S,opts={}){
   const failed=e=>(B.fail.get(e)||0)>=2;
   // arc strike: horizontal taut rope chopped down through target part with band b at contact
   function* arc(e,pt,b){yield* tracked(arc0(e,pt,b),e)}
+  // circling wisp: ambush a point ahead on its orbit (radius 1.5 around the unicorn, 1.5 m up)
+  function* ambush(e,pt,b){B.name='ambush';
+    const rate=e._spd/1.5,at=t=>{const ph=e._ph+rate*t;return [sin(ph)*1.5,1.5,-1.8+cos(ph)*1.5]};
+    let tl=.5,T;for(;tl<1.7;tl+=.1){T=at(tl);if(nearestHeadDist(T)<=REACH-.15)break}
+    const t0=S._t,sb=(b+.5)/7;let u=-1,k=0;
+    face(T);B.hy=1.6;{const dh=[T[0]-B.head[0],0,T[2]-B.head[2]],l=hypot(dh[0],dh[2]);if(l>.7)B.tH=clampHead(add(B.head,mul(dh,(l-.55)/l)))}
+    while(k++<220&&alive(e)&&pt._hp>0&&e._st==1){
+      const line=right(),rem=tl-(S._t-t0);
+      const off=u<0?.45:(.45-u*.9);
+      const c=[T[0],T[1]+off,T[2]];set(sub(c,mul(line,sb*.9)),add(c,mul(line,(1-sb)*.9)));
+      if(u<0){if(rem<=.1)u=0}else{u+=DT/.2;if(u>1)break}
+      if(rem<-.5)break;
+      yield;
+    }
+  }
   function* arc0(e,pt,b){B.name='arc';
+    if(e._t==0&&e._st==1){yield* ambush(e,pt,b);return}
     const T0=part(e,pt);face(T0);
     if(!inReach(T0)){B.tH=clampHead(add(B.head,mul(norm(sub(T0,B.head)),dist(T0,B.head)-.9)))}
     const sb=(b+.5)/7;let u=-1,k=0;
@@ -130,7 +146,8 @@ export function makeBot(S,opts={}){
     const core=bo._parts[6];yield* ensure(1);if(wp()!=1){yield;return}
     let k=0,th=0,rest=0;
     while(alive(bo)&&k++<3000){
-      B.tH=clampHead(mul(bo._fw,-1));const T=part(bo,core);face(T);
+      const T=part(bo,core);face(T);B.hy=1.6;const rc0=(core._b+.5)/7*2.2;
+      if(abs(dist(T,B.head)-rc0)>LR)B.tH=bestHead(T,rc0);
       const rc=lanceRc(bo,core,core._b),dir=norm(sub(T,B.head));const L=sub(T,mul(dir,rc)),R=add(L,mul(dir,.5));
       const A=bo._atk;
       if(th>0){const adv=min(.3,th*DT*4.5);set(add(L,mul(dir,adv)),add(R,mul(dir,adv)));th++;if(adv>=.3)th=0}
@@ -180,14 +197,19 @@ export function makeBot(S,opts={}){
       yield}
   }
   // block an orb with the taut rope, matched band segment at the crossing
+  // point on the orb path where it is intercepted: nearest to the head, but never past the
+  // unicorn's 0.9 m damage sphere (the orb is consumed there) — stay ≥ 1.25 m from the unicorn
+  const interceptPt=o=>{const d=norm(o.v),th=max(0,segT(o.p,d,B.head));const q=sub(o.p,UNI),b=dot(q,d),c=dot(q,q)-1.25*1.25,disc=b*b-c;let te=1e9;if(disc>=0){const r=-b-sqrt(disc);if(r>0)te=r}return add(o.p,mul(d,min(th,te)))};
   function* block(o){B.name='block';
     let k=0;const tt=dist(o.p,B.head)/6*90+15;
     while(k++<tt&&S._pr.includes(o)){
-      if(wp()==1){const d=norm(o.v),tp=segT(o.p,d,B.head),P=add(o.p,mul(d,max(0,tp)));const dir=norm(sub(P,B.head));face(P);const L=add(B.head,add(mul(dir,.35),[0,-.1,0]));set(L,add(L,mul(dir,.5)));yield;continue}
-      const d=norm(o.v),perp=hperp(d);const t=segT(o.p,d,B.head);
-      // place the rope across the orb path at the path point nearest the head (unicorn-bound orbs)
-      const c=add(o.p,mul(d,max(0,t)));face(o.p);const sb=(o.b+.5)/7;
-      set(sub(c,mul(perp,sb*.9)),add(c,mul(perp,(1-sb)*.9)));
+      const P=interceptPt(o);
+      if(wp()==1){const dir=norm(sub(P,B.head));face(P);const L=add(B.head,add(mul(dir,.35),[0,-.1,0]));set(L,add(L,mul(dir,.5)));yield;continue}
+      const d=norm(o.v),perp=hperp(d);
+      // place the rope across the orb path at the intercept point, matched band at the crossing
+      {const dh=sub(P,B.head),l=hypot(dh[0],dh[2]);if(l>.8)B.tH=clampHead(add(B.head,mul([dh[0],0,dh[2]],(l-.6)/l)))}
+      face(o.p);const sb=(o.b+.5)/7;
+      set(sub(P,mul(perp,sb*.9)),add(P,mul(perp,(1-sb)*.9)));
       yield;
     }
   }
@@ -200,11 +222,12 @@ export function makeBot(S,opts={}){
 
   // ---------- policies ----------
   const eta=e=>{const t=e._t,d=hypot(e._p[0],e._p[2]+1.8);
+    if((t==1||t==3)&&e._st<2&&hypot(e._p[0]-B.head[0],e._p[2]-B.head[2])<1)return max(.1,2-e._flare); // player-blocking: swings at the head in (2-flare) s
     if(t==0)return e._st?2-e._at:d/4.5+2;if(t==1)return max(0,d-1.5)/1.2+(2-e._at);if(t==2)return max(.2,3.5-e._at)*(e._alt?1:.4);if(t==3)return max(0,d-1.2)/.9+max(0,1.5-e._at);const dh=hypot(e._p[0]-B.head[0],e._p[2]-B.head[2]);return e._st==1?.3:e._st==2?1:max(.3,(dh-2.2)/3.5)};
   const work=e=>{const n=e._parts.filter(p=>p._hp>0).length;return e._t==3?n*1.3:e._t==4?n*.4:1};
   const score=e=>eta(e)/(1+work(e)*.3);
   const pickTarget=()=>{let best=null,bs=1e9;for(const e of foes()){const s=score(e);if(s<bs){bs=s;best=e}}return best};
-  const preempt=e=>{if(e._boss>=0)return 0;const b=pickTarget();return b&&b!==e&&score(b)<score(e)*.5};
+  const preempt=e=>{if(unicornOrb())return 1;if(e._boss>=0)return 0;const b=pickTarget();return b&&b!==e&&score(b)<score(e)*.5};
   const alivePart=e=>e._parts.find(p=>p._hp>0&&!(p._core&&e._parts.some(q=>q._pl&&q._hp>0)))||e._parts.find(p=>p._hp>0);
   const platePart=e=>e._parts.find(p=>p._pl&&p._hp>0);
   const nearestPart=(e,filter)=>{let b=null,bd=1e9;for(const p of e._parts)if(p._hp>0&&(!filter||filter(p))){const d=dist(part(e,p),B.head);if(d<bd){bd=d;b=p}}return b};
@@ -336,7 +359,7 @@ export function runGame(S,bot,opts={}){
   const maxT=opts.maxT||900,stopWave=opts.stopWave||99;const counts={},phases=[];let minLight=5;
   while(S._t<maxT){
     bot.step();
-    for(const e of S.drain()){counts[e.k]=(counts[e.k]||0)+1;if(e.k=='phase'||e.k=='boss'||e.k=='bossdead'||e.k=='eye')phases.push([+S._t.toFixed(1),e.k,e.d]);if(e.k=='light')minLight=min(minLight,e.d)}
+    for(const e of S.drain()){counts[e.k]=(counts[e.k]||0)+1;if(e.k=='phase'||e.k=='boss'||e.k=='bossdead'||e.k=='eye'){const bo=S._en.find(x=>x._boss>=0);phases.push([+S._t.toFixed(1),e.k,e.d,bo?bo._boss:-1])}if(e.k=='light')minLight=min(minLight,e.d)}
     if(S._ws==3)break;
     if(S._ws==4&&!opts.endless)break;
     if(S._wave>=stopWave&&S._ws==2)break;

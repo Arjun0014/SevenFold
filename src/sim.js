@@ -7,7 +7,7 @@ export const WN=['rope','lance','halo','maul','shards','prism'];
 // enemy table: hp, speed, radius, half-height, hit-centre height
 const ET=[[3,4.5,.25,0,1.5],[9,1.2,.35,.7,1.1],[6,.6,.6,0,.5],[6,.9,.45,0,.6],[1,3.5,.15,0,1.4]];
 // waves: [interval, spread(deg), type,count, ...]; single number = boss id
-const WAVES=[[2.8,40,0,5],[2.4,60,0,4,1,2],[2.4,90,2,2,0,4],[0],[1.8,120,0,6,1,3,2,1],[2,120,3,2,0,4],[2.9,180,4,1,2,2,1,2],[1],[2.4,180,4,2,3,2],[1.5,180,2,4,1,4,0,6],[1.8,180,3,3,4,1,2,3,1,4],[2]];
+const WAVES=[[3,40,0,5],[2.6,60,0,4,1,2],[2.6,90,2,2,0,4],[0],[1.8,120,0,6,1,3,2,1],[2.3,120,3,2,0,4],[3.2,180,4,1,2,2,1,2],[1],[2.4,180,4,2,3,2],[1.5,180,2,4,1,4,0,6],[3,180,3,3,4,1,2,3,1,4],[2]];
 const UNI=[0,.9,-1.8]; // unicorn body centre
 const F=[0,0,-1]; // controller forward in controller space
 const bpos=(b,r,y)=>[sin(b)*r,y,cos(b)*r];
@@ -60,7 +60,7 @@ S._init=()=>{
 S._init();
 
 // ---------- player damage ----------
-const hurt=n=>{if(S._inv>0||S._ws!=1)return;S._light-=n;S._inv=1;ev('light',S._H.p,0,S._light);if(S._light<=0){S._ws=3;S._wt=3;ev('over')}};
+const hurt=n=>{if(S._inv>0||S._ws!=1)return;S._light=max(0,S._light-n);S._inv=1;ev('light',S._H.p,0,S._light);if(S._light<=0){S._ws=3;S._wt=3;ev('over')}};
 const addSpec=n=>{S._spec=min(3,S._spec+n)};
 
 // ---------- enemies ----------
@@ -95,11 +95,12 @@ const damage=(e,pt,dmg,band,src,p,kb)=>{
 const near=(p,r,src)=>{const out=[];for(const e of S._en)if(alive(e)){let best=0,bd=1e9;for(const pt of e._parts)if(partHit(e,pt,src)){const c=partPos(e,pt),dy=max(0,abs(p[1]-c[1])-(pt._hh||e._hh)),d=hypot(p[0]-c[0],dy,p[2]-c[2])-(pt._r||e._r);if(d<r&&d<bd){bd=d;best=[e,pt,c,d]}}if(best)out.push(best)}return out};
 // melee sweep: sample n points along a-b, band from s, damage with per-enemy cooldown
 const sweep=(a,b,n,dmg,src,cd,bandFn,kb,maxHits)=>{const best=new Map;for(let i=0;i<=n;i++){const s=i/n,p=lerp(a,b,s);for(const[e,pt,c,d]of near(p,.05,src)){const o=best.get(pt);if(!o||d<o[0])best.set(pt,[d,s,e,c,p])}}
-  let hits=0;for(const[pt,[d,s,e,c,p]]of[...best].sort((x,y)=>x[1][1]-y[1][1])){if(pt._cd>0)continue;if(damage(e,pt,dmg,bandFn(s,c),src,p,kb)){pt._cd=cd;hits++;if(src==7&&e._t==1)e._stg=.8;if(maxHits&&hits>=maxHits)break}}return hits};
+  let hits=0;for(const[pt,[d,s,e,c,p]]of[...best].sort((x,y)=>x[1][1]-y[1][1])){if(pt._cd>0){if(maxHits&&++hits>=maxHits)break;continue}if(damage(e,pt,dmg,bandFn(s,c),src,p,kb)){pt._cd=cd;hits++;if(src==7&&e._t==1)e._stg=.8;if(maxHits&&hits>=maxHits)break}}return hits};
 
 // ---------- rope ----------
 const rope=()=>{
   const L=S._L.p,R=S._R.p,P=S._rp,Q=S._rq,B=S._bow;
+  if(dist(L,P[0])>.5||dist(R,P[N])>.5)for(let i=0;i<=N;i++){P[i]=lerp(L,R,i/N);Q[i]=[...P[i]]} // hand teleport (controller reconnect): reset rope
   const d=dist(L,R),ten=S._ten=B?0:clamp((d-.55)/.25,0,1),sl=SEG*(1-.15*ten);
   const prev=P.map(p=>[...p]);
   let p0=L,pN=R,k=-1,pk;
@@ -196,9 +197,9 @@ const projectiles=w=>{
   const P=S._rp,L=S._L.p,R=S._R.p;
   S._pr=S._pr.filter(o=>{o.p=add(o.p,mul(o.v,w));
     if(o.p[1]<0||len(o.p)>25)return 0;
-    const oh=dist(o.p,S._H.p)<.3?1:dist(o.p,L)<.2||dist(o.p,R)<.2?2:dist(o.p,UNI)<.9?3:0;if(oh){hurt(1);ev('orbhit',o.p,o.b,oh);return 0}
-    if(S._wp==0&&S._ten>=.7&&!S._bow)for(let i=0;i<=N;i++)if(dist(P[i],o.p)<.2){if(bandOf(i/N)==o.b){addSpec(1);ev('absorb',o.p,o.b)}else ev('block',o.p,o.b);return 0}
+    if(S._wp==0&&S._ten>=.7&&!S._bow){let bi=-1,bd=.2;for(let i=0;i<=N;i++){const d=dist(P[i],o.p);if(d<bd){bd=d;bi=i}}if(bi>=0){if(bandOf(bi/N)==o.b){addSpec(1);ev('absorb',o.p,o.b)}else ev('block',o.p,o.b);return 0}}
     if(S._wp==1&&segd(o.p,L,add(L,mul(norm(sub(R,L)),2.2)))[0]<.2){ev('block',o.p,o.b);return 0}
+    const oh=dist(o.p,S._H.p)<.3?1:dist(o.p,L)<.2||dist(o.p,R)<.2?2:dist(o.p,UNI)<.9?3:0;if(oh){hurt(1);ev('orbhit',o.p,o.b,oh);return 0}
     return 1});
   S._ar=S._ar.filter(a=>{a.p=add(a.p,mul(a.v,w));if(len(a.p)>40||a.p[1]<0)return 0;
     if(a.pull){a.v=add(a.v,mul(sub(a.pull,a.p),8*w));if(dist(a.p,a.pull)<1)return 0}
@@ -250,20 +251,20 @@ const enemies=w=>{
 // ---------- bosses ----------
 const bossPartDead=e=>{
   if(e._boss==2){const ph=e._ph;
-    if(ph==1&&!e._parts.some(p=>p._hp>0)){e._ph=2;e._p=add(mul(e._fw,-3),[0,3,0]);e._parts=[0,1,2].map(i=>({_o:[0,0,0],_hp:8,_b:floor(rnd()*7),_pl:1,_w:[sin(e._by+(i-1)*.7)*1.2,1.3,cos(e._by+(i-1)*.7)*1.2]}));e._atk=0;e._tm=[4,3];e._inv=0;ev('phase',e._p,0,2)}
-    else if(ph==2&&!e._parts.some(p=>p._hp>0)){e._ph=3;e._p=[0,2,0];e._parts=[{_o:[0,0,0],_hp:100,_b:0,_r:.6}];e._tm=[3,0];e._inv=0;ev('phase',e._p,0,3)}
+    if(ph==1&&!e._parts.some(p=>p._hp>0)){e._ph=2;e._p=add(mul(e._fw,-3),[0,3,0]);e._parts=[0,1,2].map(i=>({_o:[0,0,0],_hp:24,_b:floor(rnd()*7),_melee:1,_r:.35,_w:[sin(e._by+(i-1)*.7)*1.2,1.3,cos(e._by+(i-1)*.7)*1.2]}));e._atk=0;e._tm=[4,3];e._inv=0;ev('phase',e._p,0,2)}
+    else if(ph==2&&!e._parts.some(p=>p._hp>0)){e._ph=3;e._p=[0,2,0];e._parts=[{_o:[0,0,0],_hp:180,_b:0,_r:.6}];e._tm=[3,0];e._inv=0;ev('phase',e._p,0,3)}
     else if(ph==3&&!e._parts.some(p=>p._hp>0))killE(e);
   }else if(e._boss==1){
     if(!e._parts.some(p=>p._hp>0))killE(e);
-    else if(!e._parts.some(p=>p._pl&&p._hp>0)&&e._ph==1){e._ph=2;e._tm=[5,3];e._atk=0;ev('phase',e._p,0,2)}
+    else if(!e._parts.some(p=>p._pl&&p._hp>0)&&e._ph==1){e._ph=2;e._tm=[5,3];e._atk=0;e._p=mul(e._fw,-2.2);e._parts[6]._b=2+floor(rnd()*5);ev('phase',e._p,0,2)}
   }else if(!e._parts.some(p=>p._hp>0))killE(e);
 };
 const spawnBoss=id=>{
   const by=yaw(),fw=bpos(by,-1,0),rt=cross([0,1,0],fw);S._front=by; // fw = direction from boss toward centre
   const e={_t:5+id,_boss:id,_by:by,_fw:fw,_rt:rt,_hp:1,_r:.5,_hh:0,_b:floor(rnd()*7),_stg:0,_cd:0,_kv:[0,0,0],_parts:[],_atk:0,_ph:1,_tm:[],_open:0,_oc:0,_inv:0,_hid:0,_spd:0,_at:0,_st:0,_spawned:0};
-  if(id==0){e._p=add(mul(fw,-6),[0,7,0]);e._parts=[{_o:[0,0,0],_hp:260,_b:e._b,_far:1,_r:.8}];e._tm=[3,8,6]}
-  if(id==1){e._p=mul(fw,-3);e._parts=[[-.4,2.2,0],[.4,2.2,0],[-.9,2.8,0],[.9,2.8,0],[-1.2,1.4,0],[1.2,1.4,0]].map(o=>({_o:o,_hp:8,_b:floor(rnd()*7),_pl:1,_r:.35}));e._parts.push({_o:[0,1.5,0],_hp:400,_b:e._b,_core:1,_melee:1,_r:.5});e._tm=[5,4]}
-  if(id==2){e._p=add(mul(fw,-6),[0,6,0]);e._parts=[{_o:[0,0,0],_hp:100,_b:e._b,_far:1,_r:.9}];e._inv=1;e._tm=[0,0];S._dark=1}
+  if(id==0){e._p=add(mul(fw,-6),[0,7,0]);e._parts=[{_o:[0,0,0],_hp:400,_b:e._b,_far:1,_r:.8}];e._tm=[3,8,6]}
+  if(id==1){e._p=mul(fw,-3);e._parts=[[-.4,2.2,0],[.4,2.2,0],[-.9,2.8,0],[.9,2.8,0],[-1.2,1.4,0],[1.2,1.4,0]].map(o=>({_o:o,_hp:8,_b:floor(rnd()*7),_pl:1,_r:.35}));e._parts.push({_o:[0,1.5,0],_hp:650,_b:e._b,_core:1,_melee:1,_r:.5});e._tm=[5,4]}
+  if(id==2){e._p=add(mul(fw,-6),[0,6,0]);e._parts=[{_o:[0,0,0],_hp:130,_b:e._b,_far:1,_r:.9}];e._inv=1;e._tm=[0,0];S._dark=1}
   S._en.push(e);ev('boss',e._p,e._b,id);return e};
 const strike=(e,k,r,t)=>{e._atk={k,r,t:t||.8,p:[S._H.p[0],0,S._H.p[2]]};ev('cue',e._atk.p,k,e._atk.t)};
 const resolveAtk=(e,w)=>{const A=e._atk;if(!A)return;A.t-=w;if(A.t>0)return;e._atk=0;const H=S._H.p;
@@ -277,7 +278,7 @@ const resolveAtk=(e,w)=>{const A=e._atk;if(!A)return;A.t-=w;if(A.t>0)return;e._a
 const boss=(e,w)=>{
   const T=e._tm;if(e._stg>0){e._stg-=w;return}
   resolveAtk(e,w);
-  if(e._boss==0){const p2=e._parts[0]._hp<30;
+  if(e._boss==0){const p2=e._parts[0]._hp<150;
     T[0]-=w;T[1]-=w;T[2]-=w;
     if(T[0]<=0&&!e._atk){T[0]=p2?2:3;strike(e,0,.5)}
     if(T[1]<=0&&!e._atk){T[1]=p2?5:8;e._atk={k:1,r:1.4,t:1.3};ev('cue',[0,1.4,0],1,1.3)}
@@ -354,5 +355,6 @@ S.hashState=()=>{let h=2166136261;const f=x=>{h=Math.imul(h^(x*1000|0),16777619)
   for(const o of S._pr){f(o.p[0]);f(o.p[2])}for(const a of S._ar){f(a.p[0]);f(a.p[2])}
   return h>>>0};
 S.drain=()=>{const e=S._ev;S._ev=[];return e};
+S._spawn=spawn;S._spawnBoss=spawnBoss;
 return S;
 }

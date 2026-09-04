@@ -10,7 +10,7 @@
     "test": "node test/sim.test.js && node test/browser.test.js",
     "test:sim": "node test/sim.test.js",
     "test:browser": "node test/browser.test.js",
-    "dev": "node tools/serve.js"
+    "dev": "node tools/serve.cjs"
   },
   "keywords": [],
   "author": "",
