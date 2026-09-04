@@ -40,7 +40,7 @@ export function inpPoll(cam,dt){
     return{L:inpLast.L,R:inpLast.R,H};
   }
   // desktop
-  const v=1.5*dt,K=x=>inpK['Key'+x]?v:0;
+  const v=5*dt,K=x=>inpK['Key'+x]?v:0; // 5 m/s so desktop swings reach the 3–3.5 m/s strike thresholds
   for(const[p,k]of[[inpHR,'ADSWQE'],[inpHL,'JLKIUO']]){p[0]+=K(k[1])-K(k[0]);p[2]+=K(k[3])-K(k[2]);p[1]+=K(k[5])-K(k[4]);const l=Math.hypot(...p);if(l>1)for(let i=0;i<3;i++)p[i]/=l}
   cam.rotation.set(inpPit,PI+inpYaw,0);
   const H={p:[0,1.6,0],q:[cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]};

@@ -30,6 +30,18 @@ R restart        M mute
 The unicorn you are guarding stands **behind** you: turn around to see it and
 its five Light motes. Enemies come from the front and the sides toward it.
 
+Desktop weapon use (the keys move a hand at 5 m/s, fast enough to strike):
+
+| weapon | desktop |
+|---|---|
+| Rope (bar) | hold hands apart (A/D or J/L), then tap W/S or I/K to swing the bar through an enemy |
+| Bow | with the bar taut, hold LMB and tap S to draw the right hand back, release LMB |
+| 5 Lance | tap W repeatedly to thrust; the shaft points from the left hand through the right |
+| 3 Halo | LMB throws the ring in the look direction; it returns to the right hand |
+| 2 Maul | swing the right hand with A/D through an enemy; the head colour cycles |
+| 1 Shards | slash with W/S (right) or I/K (left); LMB / RMB throws a blade |
+| 4 Prism | hold LMB for the beam in the look direction (5/s with Spectrum, 1/s without) |
+
 ## The rainbow
 
 Red is always at your left hand, violet at your right. As a raw rope it is:

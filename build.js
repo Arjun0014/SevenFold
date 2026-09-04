@@ -35,7 +35,7 @@ if(ROLL){const packer=new Packer([{data:min,type:'js',action:'eval'}],{});await 
 writeFileSync('dist/bundle.rolled.js',rolled);
 
 // 4. inline
-const css='body{margin:0;background:#0b0f1e;color:#dfe6ff;font:13px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;opacity:.6}#u{padding:40px;text-align:center;font-size:20px}';
+const css='body{margin:0;background:#0b0f1e;color:#dfe6ff;font:13px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;opacity:.6}#u{position:fixed;top:40%;width:100%;text-align:center;font-size:20px}';
 const html=`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Sevenfold</title><style>${css}</style><div id=u></div><script>U="https://play.js13kgames.com/2026/webxr/three.js";${rolled}</script>`;
 writeFileSync('dist/index.html',html);
 const urls=html.match(/https?:\/\/[^"' ]*/g)||[];

@@ -33,7 +33,7 @@ const ring=(p,b)=>{const r=rdRing;r.life=.3;r.position.set(p[0],p[1],p[2]);r.mat
 export function rdInit(T,R){
   rdT=T;rdTmp=new T.Matrix4;rdV=new T.Vector3;rdQ=new T.Quaternion;rdS=new T.Vector3;rdUp=new T.Vector3(0,1,0);rdCol=COLS.map(rdC);
   rdScene=new T.Scene;rdWorld=new T.Group;rdScene.add(rdWorld);
-  rdFog=rdScene.fog=new T.Fog(0x0b0f1e,8,45);rdScene.background=rdC(0x0b0f1e);
+  rdFog=rdScene.fog=new T.Fog(0x101830,8,45);rdScene.background=rdC(0x101830);
   rdCam=new T.PerspectiveCamera(90,innerWidth/innerHeight,.05,300);rdCam.position.set(0,1.6,0);rdCam.rotation.order='YXZ';rdCam.rotation.y=PI;
   rdScene.add(new T.AmbientLight(0x6878b0,1.6));const dl=new T.DirectionalLight(0xb0c0ff,2);dl.position.set(30,60,100);rdScene.add(dl);
   const G=T,sph=(r,a=10,b=7)=>new G.SphereGeometry(r,a,b),box=(x,y,z)=>new G.BoxGeometry(x,y,z),cyl=(a,b,h,s=8)=>new G.CylinderGeometry(a,b,h,s),rg=(a,b,s=32)=>new G.RingGeometry(a,b,s);
@@ -66,8 +66,8 @@ export function rdInit(T,R){
   rdM.shards=new G.Group;rdWorld.add(rdM.shards);rdM._sh=[0,1].map(i=>mesh(withS(box(.05,.015,.45),(x,y,z)=>i*.5+(z+.225)/.45*.5),rdM._rb,rdM.shards));
   rdM.prism=new G.Group;rdWorld.add(rdM.prism);mesh(withS(new G.OctahedronGeometry(.12),(x,y)=>(y+.12)/.24),rdM._rb,rdM.prism);rdM._beam=mesh(wg(cyl(.05,.05,12,6)),bas(0xffffff,.6,1),rdM.prism,0,0,6);
   // ---- enemies: instanced bodies + cores; shell plates pool (also Gloam plates & Eclipse tentacles)
-  const em=lam(0x0a0c16,1,0x2a3052),cm=bas(0xffffff);
-  rdM._eb=inst(sph(1,10,7),em,52);rdM._ec=inst(sph(.1,8,6),cm,52);rdM._sw=inst(sph(.1,6,4),cm,40);
+  const em=lam(0x505870,1,0x181c30),cm=bas(0xffffff);
+  rdM._eb=inst(sph(1,10,7),em,52);rdM._ec=inst(sph(.1,12,8),cm,52);rdM._sw=inst(sph(.1,6,4),cm,40);
   rdM._plates=inst(cyl(.2,.2,.1,6),bas(0xffffff),48);
   // ---- bosses
   const th=rdM._th=new G.Group;rdWorld.add(th);th.visible=false;const cl=[];for(let i=0;i<12;i++)cl.push([sph(1.4+i*7%5*.3,10,7),sin(i*2.4)*3.2,cos(i*1.7)*1.6+1.5,cos(i*3.1)*2-1.5]);mesh(merge(cl),em,th);rdM._eye=mesh(sph(.8,16,12),bas(0x14141c),th);
@@ -77,7 +77,7 @@ export function rdInit(T,R){
   rdM._mouth=[1,2,3].map(r=>mesh(rg(r-.15,r+.15,24),bas(0x14141c),ec,0,0,.4));rdM._ecore=mesh(sph(.6,12,8),bas(0xff3b4a));rdM._ecore.visible=false; //@eclipse
   // ---- effects: particles, rings, crack flash, cue ring, lightning, sweep bar, forge trail, text
   rdPP=new Float32Array(600*3).fill(-99);rdPC=new Float32Array(600*3);rdLife=new Array(600).fill(0);const pg=new G.BufferGeometry;pg.setAttribute('position',new G.BufferAttribute(rdPP,3));pg.setAttribute('color',new G.BufferAttribute(rdPC,3)); //@particles
-  rdPts=new G.Points(pg,new G.PointsMaterial({size:.06,vertexColors:true,transparent:true,blending:G.AdditiveBlending,depthWrite:false}));rdPts.frustumCulled=false;rdWorld.add(rdPts); //@particles
+  rdPts=new G.Points(pg,new G.PointsMaterial({size:.03,vertexColors:true,transparent:true,blending:G.AdditiveBlending,depthWrite:false}));rdPts.frustumCulled=false;rdWorld.add(rdPts); //@particles
   rdRing=mesh(rg(.85,1,24),bas(0xffffff,.8,1));rdRing.life=0;rdRing.visible=false;
   rdM._crack=mesh(sph(.1,8,6),bas(0xffffff,.9,1));rdM._crack.visible=false;
   rdM._cue=mesh(rg(.45,.55),bas(0xffe14a,.9,1));rdM._cue.rotation.x=-PI/2;rdM._cue.visible=false;
@@ -118,7 +118,7 @@ export function rdSync(S,ev,dt,mute){
   // ---- forge feedback: the rope turns white, fog darkens (slow-mo is in the sim)
   rdDes+=((S._fg.on?1:0)-rdDes)*min(1,dt*8);rdM._rb.uniforms.d.value=rdM._rbg.uniforms.d.value=rdDes;
   // ---- fog / flashes / dawn
-  const fc=rdFlash>0?0:rdDes>.5?0x030408:S._dark?0x02030a:0x0b0f1e;rdFog.color.lerp(rdC(fc),min(1,dt*6));rdScene.background.copy(rdFog.color);
+  const fc=rdFlash>0?0:rdDes>.5?0x030408:S._dark?0x02030a:0x101830;rdFog.color.lerp(rdC(fc),min(1,dt*6));rdScene.background.copy(rdFog.color);
   rdFog.far+=((S._dark?4.5:rdDawn>=0?80:45)-rdFog.far)*min(1,dt*(rdDawn>=0?.3:3));if(rdFlash>0)rdFlash-=dt;
   if(rdDawn>=0){rdDawn+=dt;rdFog.color.lerp(rdC(0x2a1a2e),dt*.2)}
   // ---- unicorn: breathing, head bob, horn light, motes
@@ -147,7 +147,7 @@ export function rdSync(S,ev,dt,mute){
       continue}
     const t=e._t,yaw=atan2(-e._p[0],-1.8-e._p[2]),gp=[e._p[0],t?0:e._p[1],e._p[2]];
     if(t==4){for(const q of e._parts)if(ns<40)place(sw,ns++,bp(e,q),0,q._hp>0?1:0,q._b);continue}
-    if(n>=52)continue;const f=e._flare>0?1.1:1;place(eb,n,[gp[0],gp[1]+by[t],gp[2]],yaw,bs[t].map(x=>x*f));place(ec,n++,add(gp,[sin(yaw)*cz[t],cy[t],cos(yaw)*cz[t]]),0,cs[t]*f,e._b);
+    if(n>=52)continue;const f=e._flare>0?1.1:1;place(eb,n,[gp[0],gp[1]+by[t],gp[2]],yaw,bs[t].map(x=>x*f),e._b);place(ec,n++,add(gp,[sin(yaw)*cz[t],cy[t],cos(yaw)*cz[t]]),0,cs[t]*f,e._b);
     if(t==3)for(const q of e._parts)if(q._pl)place(rdM._plates,pl++,add(gp,[q._o[0],.62,q._o[2]]),0,q._hp>0?1:0,q._b);
   }
   for(;n<52;n++){place(eb,n,[0,-9,0],0,0);place(ec,n,[0,-9,0],0,0)}for(;ns<40;ns++)place(sw,ns,[0,-9,0],0,0);flush(eb);flush(ec);flush(sw);
