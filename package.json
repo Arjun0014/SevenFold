@@ -1,0 +1,26 @@
+{
+  "name": "sevenfold",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "test": "node test/sim.test.js && node test/browser.test.js",
+    "test:sim": "node test/sim.test.js",
+    "test:browser": "node test/browser.test.js",
+    "dev": "node tools/serve.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "SEVENFOLD - js13kGames 2026 WebXR entry",
+  "devDependencies": {
+    "@gfx/zopfli": "^1.0.15",
+    "playwright": "^1.62.1",
+    "roadroller": "^2.1.0",
+    "terser": "^5.51.2",
+    "three": "^0.185.0"
+  }
+}
