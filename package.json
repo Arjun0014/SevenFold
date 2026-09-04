@@ -22,5 +22,6 @@
     "roadroller": "^2.1.0",
     "terser": "^5.51.2",
     "three": "^0.185.0"
-  }
+  },
+  "type": "module"
 }
