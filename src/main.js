@@ -9,11 +9,11 @@ mAu=auInit;mAuS=auSync; //@audio
 import {yawOf} from './vec.js';
 
 const mU=document.getElementById('u'),mB=document.createElement('button'),mH=document.createElement('div');
-mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='mouse look · WASD/QE + IJKL/UO hands · LMB/RMB triggers · Space forge · 1-5 sigils · R restart · M mute · F fullscreen';
+mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Guard the unicorn behind you (turn around). Mouse look · WASD/QE + IJKL/UO hands · LMB/RMB triggers · Space forge · 1-5 sigils · R restart · M mute';
 document.body.append(mB,mH);
 let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
 let R;try{R=new T.WebGLRenderer({antialias:true})}catch(e){}
-if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'Sevenfold needs WebGL, which this browser could not start.':'Sevenfold needs the hosted Three.js file from play.js13kgames.com. It could not be loaded — check the connection and reload.'}
+if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'Sevenfold needs WebGL.':'Sevenfold needs the hosted Three.js file from play.js13kgames.com — check the connection and reload.'}
 else{
   R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.setSize(innerWidth,innerHeight);document.body.append(R.domElement);
   let seed=Date.now()>>>10,sim=createSim(seed),acc=0,last=0,evLog=[],started=0,mute=0;

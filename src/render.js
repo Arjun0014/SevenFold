@@ -19,7 +19,7 @@ const rbMat=(w,a,ad)=>new rdT.ShaderMaterial({uniforms:{w:{value:w},a:{value:a},
   vertexShader:'varying float v;uniform float w;void main(){v=uv.x;gl_Position=projectionMatrix*modelViewMatrix*vec4(position+normal*w,1.);}',
   fragmentShader:'uniform vec3 c[7];uniform float a,d;varying float v;void main(){float b=v*7.,f=fract(b);vec3 k=c[int(min(b,6.))]*(.6+.4*min(1.,min(f,1.-f)*12.));gl_FragColor=vec4(mix(k,vec3(.95),d),a);}',
   transparent:a<1||!!ad,blending:ad?rdT.AdditiveBlending:rdT.NormalBlending,depthWrite:!ad,side:rdT.DoubleSide});
-const inst=(g,m,n,par)=>{const o=new rdT.InstancedMesh(g,m,n);o.count=n;(par||rdWorld).add(o);o.frustumCulled=false;for(let i=0;i<n;i++)o.setColorAt(i,rdC(0x1a2140));rdTmp.makeScale(0,0,0);for(let i=0;i<n;i++)o.setMatrixAt(i,rdTmp);return o};
+const inst=(g,m,n,par)=>{const o=new rdT.InstancedMesh(g,m,n);o.count=n;(par||rdWorld).add(o);o.frustumCulled=false;for(let i=0;i<n;i++)o.setColorAt(i,rdC(0x2c3a70));rdTmp.makeScale(0,0,0);for(let i=0;i<n;i++)o.setMatrixAt(i,rdTmp);return o};
 let rdV,rdQ,rdS,rdUp;
 const place=(o,i,p,yaw,s,c)=>{rdTmp.compose(rdV.set(p[0],p[1],p[2]),rdQ.setFromAxisAngle(rdUp,yaw||0),s.length?rdS.set(...s):rdS.set(s,s,s));o.setMatrixAt(i,rdTmp);if(c!=null)o.setColorAt(i,rdCol[c])};
 const flush=o=>{o.instanceMatrix.needsUpdate=true;if(o.instanceColor)o.instanceColor.needsUpdate=true};
@@ -33,11 +33,11 @@ const ring=(p,b)=>{const r=rdRing;r.life=.3;r.position.set(p[0],p[1],p[2]);r.mat
 export function rdInit(T,R){
   rdT=T;rdTmp=new T.Matrix4;rdV=new T.Vector3;rdQ=new T.Quaternion;rdS=new T.Vector3;rdUp=new T.Vector3(0,1,0);rdCol=COLS.map(rdC);
   rdScene=new T.Scene;rdWorld=new T.Group;rdScene.add(rdWorld);
-  rdFog=rdScene.fog=new T.Fog(0x070a14,6,40);rdScene.background=rdC(0x070a14);
+  rdFog=rdScene.fog=new T.Fog(0x0b0f1e,8,45);rdScene.background=rdC(0x0b0f1e);
   rdCam=new T.PerspectiveCamera(90,innerWidth/innerHeight,.05,300);rdCam.position.set(0,1.6,0);rdCam.rotation.order='YXZ';rdCam.rotation.y=PI;
-  rdScene.add(new T.AmbientLight(0x304060,.8));const dl=new T.DirectionalLight(0x8090c0,1.2);dl.position.set(30,60,100);rdScene.add(dl);
+  rdScene.add(new T.AmbientLight(0x6878b0,1.6));const dl=new T.DirectionalLight(0xb0c0ff,2);dl.position.set(30,60,100);rdScene.add(dl);
   const G=T,sph=(r,a=10,b=7)=>new G.SphereGeometry(r,a,b),box=(x,y,z)=>new G.BoxGeometry(x,y,z),cyl=(a,b,h,s=8)=>new G.CylinderGeometry(a,b,h,s),rg=(a,b,s=32)=>new G.RingGeometry(a,b,s);
-  const stone=lam(0x12141c,1,0x07080f);
+  const stone=lam(0x2a3048,1,0x0a0c18);
   // ---- arena: altar, rune rings, ruins, cloud-sea, sky, moon, dust
   mesh(cyl(3,3.2,.3,32),stone,0,0,-.15);
   rdM._runes=inst(rg(1,1.04,48),bas(0xffffff),7);rdM._runes.rotation.x=-PI/2;rdM._runes.position.y=.006;
@@ -45,15 +45,16 @@ export function rdInit(T,R){
     ruins.push([cyl(.22,.3,h,6),x,h/2-.3,z,1,1,1,0,0,i%2*.15]);if(i%3==0)ruins.push([box(.5,4,.5),x+.9,1.7,z],[box(.5,4,.5),x-.9,1.7,z],[box(2.4,.5,.5),x,3.9,z])}
   mesh(merge(ruins),stone);
   const sea=new G.PlaneGeometry(140,140,36,36);{const p=sea.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,sin(p.getX(i)*.6)*sin(p.getY(i)*.45)*.5)}sea.computeVertexNormals();
-  mesh(sea,lam(0x0b0e1a,1,0x04050a),0,0,-.5,0).rotation.x=-PI/2;
-  rdM._moon=mesh(sph(40,24,16),new G.MeshLambertMaterial({color:0x23242c,fog:false}),0,70,80,120);
+  mesh(sea,lam(0x141a30,1,0x060812),0,0,-.5,0).rotation.x=-PI/2;
+  rdM._moon=mesh(sph(40,24,16),new G.MeshLambertMaterial({color:0x5a5c6e,fog:false}),0,70,80,120);
   // ---- unicorn (primitives), horn light, motes
-  const um=lam(0xdfe6ff,.45,0x303848),U=rdM._uni=new G.Group;U.position.set(0,0,-1.8);U.rotation.y=-PI*.5;rdWorld.add(U);
-  const parts=[[box(1.1,.5,.4),0,.9,0],[box(.4,.32,.28),.7,1.3,0],[cyl(.06,.06,.7,6),-.4,.35,.12],[cyl(.06,.06,.7,6),-.4,.35,-.12],[cyl(.06,.06,.7,6),.4,.35,.12],[cyl(.06,.06,.7,6),.4,.35,-.12],[box(.3,.28,.25),.5,1.05,0]];
-  for(let i=0;i<3;i++)parts.push([cyl(.03,.02,.35,5),.15-i*.2,1.28,0,1,1,1,0,0,.6]);
-  mesh(merge(parts),um,U);mesh(new G.ConeGeometry(.04,.35,6),bas(0xffffff),U,.78,1.6,0,1,1,1).rotation.z=-.4;
-  rdM._horn=new G.PointLight(0xffffff,3,7,1.5);rdM._horn.position.set(.78,1.7,0);U.add(rdM._horn);
-  rdM._motes=inst(sph(.045,6,4),bas(0xffffff,1,1),5,U);
+  const um=lam(0xe8eeff,.75,0x506080),U=rdM._uni=new G.Group;U.position.set(0,0,-1.8);U.rotation.y=-PI*.5;rdWorld.add(U);
+  const parts=[[box(1.2,.5,.42),0,1,0],[box(.3,.6,.3),.55,1.35,0,1,1,1,0,0,-.5],[box(.42,.24,.26),.8,1.62,0],[box(.22,.16,.2),1.05,1.58,0],[new G.ConeGeometry(.08,.6,6),-.68,.95,0,1,1,1,0,0,1.9]];
+  for(const x of[-.42,.42])for(const z of[-.13,.13])parts.push([cyl(.06,.05,.75,6),x,.4,z]);
+  for(let i=0;i<4;i++)parts.push([cyl(.04,.02,.3,5),.42+i*.12,1.5+i*.08,0,1,1,1,0,0,.7]);
+  mesh(merge(parts),um,U);mesh(new G.ConeGeometry(.04,.4,6),bas(0xffffff),U,.85,1.9,0).rotation.z=-.5;
+  rdM._horn=new G.PointLight(0xffffff,4,8,1.5);rdM._horn.position.set(.85,1.9,0);U.add(rdM._horn);
+  rdM._motes=inst(sph(.06,6,4),bas(0xffffff,1,1),5,U);
   // ---- rainbow rope: tube rebuilt each frame, one geometry, core + glow copy
   rdM._rb=rbMat(0,1);rdM._rbg=rbMat(.035,.25,1);rdRope=mesh(sph(.01),rdM._rb);rdGlow=mesh(sph(.01),rdM._rbg);rdRope.frustumCulled=rdGlow.frustumCulled=false;
   rdM._hL=mesh(sph(.04,8,6),bas(0xffffff,.7));rdM._hR=mesh(sph(.04,8,6),bas(0xffffff,.7));
@@ -65,7 +66,7 @@ export function rdInit(T,R){
   rdM.shards=new G.Group;rdWorld.add(rdM.shards);rdM._sh=[0,1].map(i=>mesh(withS(box(.05,.015,.45),(x,y,z)=>i*.5+(z+.225)/.45*.5),rdM._rb,rdM.shards));
   rdM.prism=new G.Group;rdWorld.add(rdM.prism);mesh(withS(new G.OctahedronGeometry(.12),(x,y)=>(y+.12)/.24),rdM._rb,rdM.prism);rdM._beam=mesh(wg(cyl(.05,.05,12,6)),bas(0xffffff,.6,1),rdM.prism,0,0,6);
   // ---- enemies: instanced bodies + cores; shell plates pool (also Gloam plates & Eclipse tentacles)
-  const em=lam(0x05060a,1,0x101422),cm=bas(0xffffff);
+  const em=lam(0x0a0c16,1,0x2a3052),cm=bas(0xffffff);
   rdM._eb=inst(sph(1,10,7),em,52);rdM._ec=inst(sph(.1,8,6),cm,52);rdM._sw=inst(sph(.1,6,4),cm,40);
   rdM._plates=inst(cyl(.2,.2,.1,6),bas(0xffffff),48);
   // ---- bosses
@@ -84,11 +85,11 @@ export function rdInit(T,R){
   rdM._bar=mesh(box(6.4,.08,.08),bas(0xbfe3ff,.9,1));rdM._bar.visible=false;
   const cv=document.createElement('canvas');cv.width=1024;cv.height=256;rdCtx=cv.getContext('2d');rdTex=new G.CanvasTexture(cv);
   rdM._tp=mesh(new G.PlaneGeometry(3,.75),new G.MeshBasicMaterial({map:rdTex,transparent:true,fog:false}),0,0,1.7,3);rdM._tp.rotation.y=PI;
-  rdSetText('SEVENFOLD','Hold the rainbow. Pull a trigger.');
+  rdSetText('SEVENFOLD','Guard the unicorn behind you. Pull a trigger.');
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
 export const rdWeapons=()=>['lance','halo','maul','shards','prism'].filter(k=>rdM[k].visible); // unmangled keys: looked up by name
-const rdHints={1:'Swing the rainbow.',3:'Taut blocks orbs.',5:'Hold both grips. Stretch.',6:'Grips. Raise, slam.',7:'Grips. Circle.',9:'Grips. Cross, pull apart.',10:'Grips. Wring.'};
+const rdHints={1:'Swing the rainbow at the lights.',2:'Hands apart: a hard bar.',3:'A taut bar blocks orbs.',5:'Hold both grips, stretch: Lance.',6:'Grips: raise, slam: Maul.',7:'Grips: circle: Halo.',9:'Grips: cross, pull apart: Shards.',10:'Grips: wring: Prism.'};
 const rdBoss=['THUNDERHEAD','GLOAM','ECLIPSE'];
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
 const aimZ=(o,d)=>o.quaternion.setFromUnitVectors(rdS.set(0,0,1),rdV.set(d[0],d[1],d[2]).normalize());
@@ -105,7 +106,7 @@ export function rdSync(S,ev,dt,mute){
     else if(k=='wave'){rdSetText('Wave '+e.d,rdHints[e.d]||'')}
     else if(k=='boss'){rdSetText(rdBoss[e.d],'')}
     else if(k=='clear'||k=='start'||k=='restart'||k=='endless'){rdSetText('','');if(k!='clear')rdDawn=-1}
-    else if(k=='over'){rdSetText('The Light is gone','Wave '+S._wave+'  ·  Score '+S._score+'  ·  Trigger to try again')}
+    else if(k=='over'){rdSetText('The Light is gone','Wave '+S._wave+' · Score '+S._score+' · Trigger to retry')}
     else if(k=='dawn'){rdDawn=0;rdSetText('Dawn','Score '+S._score+'  ·  '+(S._t|0)+' s  ·  Trigger for endless night')}
     else if(k=='cue'){if(e.b==1){rdBar=e.d;rdM._bar.position.y=p[1];rdM._bar.visible=true}else{rdCue=rdCueT=e.d;setP(rdM._cue,[p[0],.01,p[2]]);if(e.b==3)setP(rdM._cue,[0,.01,-1.8]);rdM._cue.visible=true}}
     else if(k=='strike'){if(boss&&boss._boss==0){rdBolt=.3;setP(rdLine,[p[0],7,p[2]]);rdLine.visible=true}else{setP(rdM._crack,[p[0],.3,p[2]]);rdM._crack.scale.setScalar(3);rdM._crack.visible=true;rdCrack=.3}}
@@ -121,8 +122,8 @@ export function rdSync(S,ev,dt,mute){
   if(rdDawn>=0){rdDawn+=dt;rdFog.color.lerp(rdC(0x2a1a2e),dt*.2)}
   // ---- unicorn: breathing, head bob, horn light, motes
   const U=rdM._uni,b=1+.02*sin(S._t*1.2);U.scale.set(b,b,b);U.position.y=S._light<2?-.15:0;rdM._horn.intensity=.6+S._light*.6;
-  for(let i=0;i<5;i++){const a=S._t*1.5+i*1.257;place(rdM._motes,i,[.78+cos(a)*.3,1.7+sin(a*1.3)*.1,sin(a)*.3],0,i<S._light?1:0,6-i)}flush(rdM._motes);
-  for(let i=0;i<7;i++)place(rdM._runes,i,[0,0,0],0,.6+i*.35,i<S._ring?i:null);if(S._ring==0)for(let i=0;i<7;i++)rdM._runes.setColorAt(i,rdC(0x1a2140));flush(rdM._runes);
+  for(let i=0;i<5;i++){const a=S._t*1.5+i*1.257;place(rdM._motes,i,[.85+cos(a)*.35,1.95+sin(a*1.3)*.12,sin(a)*.35],0,i<S._light?1:0,6-i)}flush(rdM._motes);
+  for(let i=0;i<7;i++)place(rdM._runes,i,[0,0,0],0,.6+i*.35,i<S._ring?i:null);if(S._ring==0)for(let i=0;i<7;i++)rdM._runes.setColorAt(i,rdC(0x2c3a70));flush(rdM._runes);
   // ---- rope tube
   rdRope.visible=rdGlow.visible=!S._wp||S._fg.on;
   if(rdRope.visible){rdRope.geometry.dispose();rdRope.geometry=rdGlow.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(S._rp.map(p=>new T.Vector3(...p))),N,.02,6)}
@@ -136,7 +137,7 @@ export function rdSync(S,ev,dt,mute){
   if(wp==4){[L,R].forEach((h,i)=>{const o=rdM._sh[i],t=S._sh[i],H=i?S._R:S._L;if(t){setP(o,t.p);o.rotation.set(0,S._t*25,0)}else{setP(o,h);o.quaternion.set(H.q[0],H.q[1],H.q[2],H.q[3]);o.rotateY(PI);o.translateZ(.225)}})}
   if(wp==5){setP(rdM.prism,mid);rdM.prism.rotation.y=S._t;const B=S._beam;rdM._beam.visible=!!B;if(B){rdM._beam.parent.rotation.set(0,0,0);aimZ(rdM.prism,sub(B[1],B[0]));rdM._beam.material.color.copy(rdCol[B[2]])}}
   // ---- enemies
-  const eb=rdM._eb,ec=rdM._ec,sw=rdM._sw,bs=[[.2,.28,.2],[.3,1,.2],[.6,.35,.6],[.45,.3,.45]],by=[0,1,.35,.5],cy=[0,1.3,.55,.6],cz=[.12,.16,.5,0],cs=[.8,1,1.3,1.5];let n=0,ns=0,pl=0;
+  const eb=rdM._eb,ec=rdM._ec,sw=rdM._sw,bs=[[.2,.28,.2],[.3,1,.2],[.6,.35,.6],[.45,.3,.45]],by=[0,1,.35,.5],cy=[0,1.3,.55,.6],cz=[.12,.16,.5,0],cs=[1.2,1.4,1.8,2];let n=0,ns=0,pl=0;
   for(const e of S._en){if(e._hp<=0)continue;
     if(e._boss>=0){const g=[rdM._th,rdM._gl,rdM._ecl][e._boss];g.visible=true;setP(g,e._p);g.rotation.y=atan2(e._fw[0],e._fw[2]);
       if(e._boss==0){rdM._eye.material.color.copy(e._open>0?rdCol[e._parts[0]._b]:rdC(0x14141c))}
