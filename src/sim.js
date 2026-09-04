@@ -134,9 +134,10 @@ const forgeStep=()=>{
   if(S._ht){const close=dist(L.p,R.p)<.3;G.pin=L.t&&R.t&&close?G.pin+DT:0;want=G.pin>=.4;rel=!(L.t&&R.t)}
   else{want=L.g&&R.g;rel=!(L.g&&R.g)}
   if(!G.on){if(want&&G.cd<=0&&!busy&&S._ws!=0){G.on=1;G.t=0;G.M=[];G.D=[];G.pin=0;S._halo.out=0;S._sh=[0,0];ev('forge',lerp(L.p,R.p,.5),0,S._wp);S._wp=0}return}
-  G.t+=DT;G.M.push(headSpace(lerp(L.p,R.p,.5)));G.D.push(sub(headSpace(R.p),headSpace(L.p)));
+  G.t+=DT;
   if(rel||G.t>=2.5){G.on=0;G.cd=1;G.pin=0;const w=recognise(G.M,G.D);S._feat=recognise.feat;S._wp=w;S._halo.out=0;S._halo.id++;S._sh=[0,0];S._beam=0;S._lt=[0,0,0];
-    ev(w?'forged':'unforge',lerp(L.p,R.p,.5),0,w)}
+    ev(w?'forged':'unforge',lerp(L.p,R.p,.5),0,w);return}
+  G.M.push(headSpace(lerp(L.p,R.p,.5)));G.D.push(sub(headSpace(R.p),headSpace(L.p))); // the release frame itself is not sampled
 };
 
 // ---------- weapons ----------

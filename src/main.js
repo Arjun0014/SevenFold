@@ -1,0 +1,43 @@
+// main.js — boot: dynamic import of the hosted three.js, renderer, loop, SF hook.
+import {createSim,DT,WN} from './sim.js';
+import {inpInit,inpPoll,inpSigil,inpKeys,inpO} from './input.js';
+import {xrInit,xrS,xrPulse} from './xr.js';
+import {rdInit,rdSync,rdM,rdWeapons} from './render.js';
+import {yawOf} from './vec.js';
+
+const mU=document.getElementById('u'),mB=document.createElement('button'),mH=document.createElement('div');
+mB.id='b';mB.textContent='…';mH.id='h';mH.innerHTML='mouse look · WASD/QE right hand · IJKL/UO left hand · LMB/RMB triggers · Space grips (forge) · 1-5 sigils · R restart · M mute · F fullscreen';
+document.body.append(mB,mH);
+let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
+if(!T||!T.WebGLRenderer){mB.remove();mH.remove();mU.textContent='Sevenfold needs the hosted Three.js file from play.js13kgames.com. It could not be loaded — check the connection and reload.'}
+else{
+  const R=new T.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.setSize(innerWidth,innerHeight);document.body.append(R.domElement);
+  let seed=Date.now()>>>10,sim=createSim(seed),acc=0,last=0,evLog=[],started=0,mute=0;
+  try{mute=localStorage.getItem('sevenfold_mute')=='1'}catch(e){}
+  const {scene,cam,world}=rdInit(T,R);
+  inpInit(R.domElement);
+  onresize=()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)};
+  const save=()=>{try{const b=JSON.parse(localStorage.getItem('sevenfold_best')||'{}');if(!b.score||sim._score>b.score)localStorage.setItem('sevenfold_best',JSON.stringify({wave:sim._wave,score:sim._score,time:sim._t|0}))}catch(e){}};
+  const recentre=()=>{const y=yawOf([cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]);inpO.x=cam.position.x;inpO.z=cam.position.z;inpO.y=y;world.position.set(inpO.x,0,inpO.z);world.rotation.y=y};
+  const SF=window.SF={manual:0,rec:0,
+    get sim(){return sim},inject:(L,R_,H)=>sim.inject(L,R_,H),step:n=>sim.step(n),sigil:inpSigil,
+    newGame:s=>{sim=createSim(s);evLog=[];started=1;mB.hidden=true;return sim},
+    state:()=>({wave:sim._wave,ws:sim._ws,weapon:WN[sim._wp],light:sim._light,score:sim._score,spec:sim._spec,t:sim._t,xr:xrS.on,calls:R.info.render.calls,tris:R.info.render.triangles,meshes:rdWeapons(),events:evLog.slice(-300),text:rdM.text,mute})};
+  xrInit(R,mB,()=>{started=1;mH.hidden=xrS.sup},()=>{mH.hidden=false;inpO.x=inpO.z=inpO.y=0;world.position.set(0,0,0);world.rotation.y=0});
+  R.setAnimationLoop(t=>{
+    const dt=Math.min(.1,(t-last)/1000||0);last=t;
+    if(inpKeys.r){inpKeys.r=0;sim._init();sim._ws=2;sim._wt=1;evLog=[]}
+    if(inpKeys.m){inpKeys.m=0;mute=!mute;try{localStorage.setItem('sevenfold_mute',mute?'1':'0')}catch(e){}}
+    if(inpKeys.f){inpKeys.f=0;try{document.fullscreenElement?document.exitFullscreen():document.body.requestFullscreen()}catch(e){}}
+    if(started&&!SF.manual){acc+=dt;let n=0;
+      while(acc>=DT&&n<6){const i=inpPoll(cam,DT);if(SF.rec)SF.rec.push(i);
+        if(xrS.on&&sim._ws==0&&(i.L.t||i.R.t))recentre();
+        sim.inject(i.L,i.R,i.H);sim.step();acc-=DT;n++}
+      if(n==6)acc=0}
+    else if(!started)inpPoll(cam,0);
+    const ev=sim.drain();for(const e of ev){evLog.push(e.k);if(e.k=='hit'||e.k=='crack')xrPulse(.6,40);if(e.k=='over')save()}
+    if(evLog.length>600)evLog=evLog.slice(-300);
+    rdSync(sim,ev,dt,mute);
+    R.render(scene,cam);
+  });
+}
