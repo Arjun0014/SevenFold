@@ -21,7 +21,7 @@ export const headQ=psi=>[0,sin((psi+PI)/2),0,cos((psi+PI)/2)];
 export function makeBot(S,opts={}){
   const B={head:[0,1.6,0],yaw:0,L:[-.3,1.2,.3],R:[.3,1.2,.3],Lq:[0,0,0,1],Rq:[0,0,0,1],Lt:0,Rt:0,Lg:0,Rg:0,
     tL:[-.3,1.2,.3],tR:[.3,1.2,.3],tH:[0,1.6,0],task:null,name:'',fail:new Map,frames:[],log:[],vel:new Map,prev:new Map,idle:!!opts.idle,noForge:!!opts.noForge,rec:!!opts.record,t:0};
-  const pos=e=>e._p, part=(e,pt)=>{if(pt._w)return pt._w;const o=pt._o;if(e._boss>=0)return add(e._p,add(mul(e._rt,o[0]),add([0,o[1],0],mul(e._fw,o[2]))));return add(e._p,o)};
+  const pos=e=>e._p, part=(e,pt)=>{const o=pt._o;if(e._boss>=0)return add(e._p,add(mul(e._rt,o[0]),add([0,o[1],0],mul(e._fw,o[2]))));return add(e._p,o)};
   const velOf=e=>B.vel.get(e)||[0,0,0];
   const pred=(e,pt,t)=>add(part(e,pt),mul(velOf(e),t));
   const clampHead=h=>{const r=hypot(h[0],h[2]);const s=r>PLAY_R?PLAY_R/r:1;return [h[0]*s,clamp(h[1],.85,1.7),h[2]*s]};
@@ -305,10 +305,6 @@ export function makeBot(S,opts={}){
       if(e._t==4){yield* ensure(1);if(wp()==1){yield* lance(e,ep,ep._b);return}}
       if(wp()==1&&dist(part(e,ep),B.head)<3){yield* lance(e,ep,ep._b);return}
       yield* ensure(0);yield* bow(e,ep,ep._b);return;
-    }
-    if(bo._ph==2){
-      yield* ensure(3);if(wp()!=3){yield;return}
-      const pt=nearestPart(bo);yield* maul(bo,pt);return;
     }
     // phase 3: lance the core between pulses
     yield* ensure(1);if(wp()!=1){yield;return}

@@ -41,8 +41,8 @@ export function inpPoll(cam,dt){
     return{L:inpLast.L,R:inpLast.R,H};
   }
   // desktop
-  const v=1.5*dt,K=inpK,mv=(p,a,d,w,s,u,o)=>{p[0]+=v*((K[d]?1:0)-(K[a]?1:0));p[2]+=v*((K[w]?1:0)-(K[s]?1:0));p[1]+=v*((K[o]?1:0)-(K[u]?1:0));const l=Math.hypot(p[0],p[1],p[2]);if(l>1){p[0]/=l;p[1]/=l;p[2]/=l}};
-  mv(inpHR,'KeyA','KeyD','KeyW','KeyS','KeyQ','KeyE');mv(inpHL,'KeyJ','KeyL','KeyI','KeyK','KeyU','KeyO');
+  const v=1.5*dt,K=x=>inpK['Key'+x]?v:0;
+  for(const[p,k]of[[inpHR,'ADSWQE'],[inpHL,'JLKIUO']]){p[0]+=K(k[1])-K(k[0]);p[2]+=K(k[3])-K(k[2]);p[1]+=K(k[5])-K(k[4]);const l=Math.hypot(...p);if(l>1)for(let i=0;i<3;i++)p[i]/=l}
   cam.rotation.set(inpPit,PI+inpYaw,0);
   const H={p:[0,1.6,0],q:[cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]};
   let l=inpHL,r=inpHR,g=K.Space?1:0;

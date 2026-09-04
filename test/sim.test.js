@@ -216,7 +216,7 @@ test('same seed + same input stream → identical hashes every 90 steps (two run
 // ================= A6 waves & bots (parallel workers) =================
 section('A6 waves & bots');
 mkdirSync('test/replays',{recursive:true});
-const jobs=[];for(const seed of[1,2,3,4,5]){jobs.push({kind:'perfect',seed});jobs.push({kind:'noforge',seed})}jobs.push({kind:'idle',seeds:[1,2,3,4,5]});jobs.push({kind:'endless',seed:1});jobs.push({kind:'replay',seed:1});
+const jobs=[];for(const seed of[1,2,3,4,5]){jobs.push({kind:'perfect',seed});jobs.push({kind:'noforge',seed})}jobs.push({kind:'idle',seeds:[1,2,3,4,5]});jobs.push({kind:'replay',seed:1});
 const results=await Promise.all(jobs.map(j=>new Promise((res,rej)=>{const w=new Worker(new URL(import.meta.url),{workerData:j});w.on('message',m=>res({...j,...m}));w.on('error',rej)})));
 for(const r of results){
   if(r.kind=='idle')test('idle bot loses all Light in wave 1 within 25 s (seeds 1–5)',()=>{for(const x of r.runs)assert(x.ws==3&&x.reached==1&&x.t<=25,`seed ${x.seed}: ws ${x.ws} wave ${x.reached} t ${x.t}`)});
@@ -224,12 +224,11 @@ for(const r of results){
     const w=Object.fromEntries(r.waves);console.log('       waves: '+r.waves.map(x=>x[0]+':'+x[1]).join(' ')+'  minLight '+r.minLight);
     assert(r.ws==4,`did not reach Dawn (ws ${r.ws}, wave ${r.reached}, light ${r.light})`);assert(r.minLight>0,'Light hit 0');
     for(let n=1;n<=12;n++){assert(w[n]!=null,`wave ${n} not cleared`);const boss=n==4||n==8||n==12;const lo=boss?40:15,hi=boss?150:90;assert(w[n]>=lo&&w[n]<=hi,`wave ${n} took ${w[n]} s (window ${lo}–${hi})`)}
-    for(const ph of['boss0','phase2@1','bossdead0','boss1','bossdead1','boss2','phase2@2','phase3@2','bossdead2'])assert(r.phaseSet.includes(ph),`boss phase ${ph} never entered`);
+    for(const ph of['boss0','phase2@1','bossdead0','boss1','bossdead1','boss2','phase3@2','bossdead2'])assert(r.phaseSet.includes(ph),`boss phase ${ph} never entered`);
   });
   if(r.kind=='noforge')test(`wrong-tool bot seed ${r.seed}: clears waves 1–5, fails at Gloam within 200 s`,()=>{
     const w=Object.fromEntries(r.waves);for(let n=1;n<=5;n++)assert(w[n]!=null,`wave ${n} not cleared`);
     assert(r.ws==3,'did not lose');assert(r.reached<=8,`got past Gloam (wave ${r.reached})`);if(r.reached==8)assert(r.t-r.gloamStart<=200,`Gloam fight lasted ${(r.t-r.gloamStart).toFixed(0)} s`)});
-  if(r.kind=='endless')test('endless: waves 13–16 run and get harder',()=>{const c=r.spawns;console.log('       spawns per wave: '+JSON.stringify(c));for(const n of[13,14,15,16,17])assert(c[n]>0,`wave ${n} spawned nothing`);assert(c[16]==1,'wave 16 should be the recurring Gloam');assert(c[13]>c[5]&&c[14]>c[6]&&c[15]>c[7]&&c[17]>c[9],'endless waves are not larger than their templates');assert(r.speedUp,'enemies not faster')});
   if(r.kind=='replay')test('recorded perfect-bot replay for waves 1–2 saved (test/replays/w1-2.json)',()=>{assert(r.n>1000,'replay too short');assert(r.reached>=3,'replay did not reach wave 3')});
 }
 
@@ -242,9 +241,6 @@ console.log(`\n${pass} passed, ${fail} failed`);if(fail){console.log(failures.ma
   if(j.kind=='noforge'){const S=createSim(j.seed);const b=makeBot(S,{noForge:1});let gs=0;const r=runGame(S,b,{maxT:900,until:s=>{if(s._wave==8&&!gs)gs=s._t;return 0}});
     parentPort.postMessage({waves:r.waves,ws:r.ws,reached:r.reached,t:r.t,gloamStart:gs||r.t})}
   if(j.kind=='idle'){parentPort.postMessage({runs:j.seeds.map(seed=>{const S=createSim(seed);const b=makeBot(S,{idle:1});S.inject({t:1},null,null);S.step();S.inject({t:0},null,null);const r=runGame(S,b,{maxT:60});return {seed,ws:r.ws,reached:r.reached,t:r.t}})})}
-  if(j.kind=='endless'){const S=createSim(j.seed);const b=makeBot(S);const spawns={};let speedUp=0;
-    while(S._t<2500&&S._wave<18){b.step();S._light=5;for(const e of S.drain()){if(e.k=='spawn'||e.k=='boss')spawns[S._wave]=(spawns[S._wave]||0)+1}if(S._ws==4&&S._wt<=0){b.Rt=1}if(S._wave>=13&&S._en.some(e=>e._boss<0&&e._spd>1.0*[4.5,1.2,.6,.9,3.5][e._t]))speedUp=1}
-    parentPort.postMessage({spawns,speedUp})}
   if(j.kind=='replay'){const S=createSim(j.seed);const b=makeBot(S,{record:1});const r=runGame(S,b,{stopWave:3,maxT:200});
     const rd=x=>Math.round(x*1000)/1000;const fr=b.frames.map(f=>[f.L.p.map(rd),f.L.q.map(rd),f.L.t,f.L.g,f.R.p.map(rd),f.R.q.map(rd),f.R.t,f.R.g,f.H.p.map(rd),f.H.q.map(rd)]);
     writeFileSync('test/replays/w1-2.json',JSON.stringify({seed:j.seed,frames:fr}));parentPort.postMessage({n:fr.length,reached:r.reached})}
