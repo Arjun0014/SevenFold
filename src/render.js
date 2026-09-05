@@ -25,9 +25,10 @@ const rnd=Math.random,jit=(p,y,r)=>[p[0]+(rnd()-.5)*r,y,p[2]+(rnd()-.5)*r];
 export const burst=(p,c,n,sp,up=0,life=.8)=>{const A=rdBuA,k=rdCol[c];for(let j=0;j<n;j++){const i=rdBi=(rdBi+1)%900;A.p.setXYZ(i,p[0],p[1],p[2]);A.v.setXYZ(i,(rnd()-.5)*sp,(rnd()-.5)*sp+up,(rnd()-.5)*sp);A.b.setXY(i,rdU.t.value,life*(.6+rnd()*.8));A.c.setXYZ(i,k.r,k.g,k.b)}for(const a in A)A[a].needsUpdate=true};
 const bolt=(a,b,r)=>{const P=[];for(let i=0;i<=16;i++){const s=i/16,j=(1-s)*r;P.push(new rdT.Vector3(a[0]+(b[0]-a[0])*s+(rnd()-.5)*j,a[1]+(b[1]-a[1])*s,a[2]+(b[2]-a[2])*s+(rnd()-.5)*j))}
   rdBolt.geometry.dispose();rdBolt.geometry=new rdT.TubeGeometry(new rdT.CatmullRomCurve3(P,false,'catmullrom',0),48,r*.03+.03,4);rdBolt.visible=true;rdBoltT=.22;rdFl=1;rdU.bd.value.set(b[0],14,b[2]).normalize()};
-// title line + up to two hint lines ('|' separated) on a 1024×256 canvas
-const rdSetText=(a,b='')=>{const k=a+'\n'+b;if(k==rdM.text)return;rdM.text=k;const c=rdCtx;c.clearRect(0,0,1024,256);c.fillStyle='#e8e2ff';c.textAlign='center';
-  c.font='bold 90px serif';c.fillText(a,512,b?100:150);c.font='38px serif';b.split('|').forEach((l,i)=>c.fillText(l,512,166+i*46));rdTex.needsUpdate=true};
+// the panel: title line, up to two hint lines ('|' separated), and the permanent legend of every verb and sigil, on a 1024×512 canvas
+const rdLeg=['Both triggers: arch (blocks) · swing and let go: boomerang','One trigger: lasso · swing, let go, pull back to kill','Both grips: circle throws · cross lassoes · raise and slam: Nova'];
+const rdSetText=(a,b='')=>{const k=a+'\n'+b;if(k==rdM.text)return;rdM.text=k;const c=rdCtx,T=(l,i)=>c.fillText(l,512,i);c.clearRect(0,0,1024,512);c.fillStyle='#e8e2ff';c.textAlign='center';
+  c.font='bold 90px serif';T(a,96);c.font='38px serif';b.split('|').forEach((l,i)=>T(l,162+i*46));c.font='30px serif';c.fillStyle='#a9a2c8';rdLeg.forEach((l,i)=>T(l,320+i*42));rdTex.needsUpdate=true};
 
 // ---- shaders
 const FOG='uniform vec3 fogColor;uniform float fogNear,fogFar;';
@@ -78,14 +79,14 @@ export function rdInit(T_,R){
   // ---- lightning, cue ring, text
   rdBolt=mesh(sph(.01),bas(0xe8d8ff,.9,1));rdBolt.visible=false;rdBolt.frustumCulled=false;
   rdCue=mesh(new G.RingGeometry(.45,.6,32).rotateX(-PI/2),bas(0xff3060,.9,1),0,0,.02,0);rdCue.visible=false;
-  const cv=document.createElement('canvas');cv.width=1024;cv.height=256;rdCtx=cv.getContext('2d');rdTex=new G.CanvasTexture(cv);
-  rdTp=mesh(new G.PlaneGeometry(3.2,.8),new G.MeshBasicMaterial({map:rdTex,transparent:true,fog:false}),0,0,1.75,3.2);rdTp.rotation.y=PI;
-  rdSetText('SEVENFOLD','Pull a trigger.');
+  const cv=document.createElement('canvas');cv.width=1024;cv.height=512;rdCtx=cv.getContext('2d');rdTex=new G.CanvasTexture(cv);
+  rdTp=mesh(new G.PlaneGeometry(3.2,1.6),new G.MeshBasicMaterial({map:rdTex,transparent:true,fog:false}),0,0,1.5,3.2);rdTp.rotation.y=PI;
+  rdSetText('SEVENFOLD','Strike horns with their own colour.|Red is your left, violet your right. Pull a trigger.');
   rdM.U=U;rdM.W=W;rdM.S=rdScene;rdM.C=rdCam; //@test
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
 // one lesson per wave (index = wave): arch + boomerang, colour matching, block, lasso, the Herald, Nova, the sigils, whip, the Sovereign
-const rdHints=[,'Both triggers: the arch.|Swing it and let go: the boomerang.','Strike horns with their own colour.|Red is your left, violet your right.','A rearing horn strikes.|Hold both triggers to block.','One trigger: the lasso. Swing, let go.|Caught one? Pull your hand back hard.','Block its charge, then strike.|A slain giant gives two colours back.','Three colour hits turn the rainbow white.|Clap the arch together: Nova.','Both grips slow time. Draw, then let go.|A circle throws. Cross and part: lasso.','Both grips, raise and slam down: Nova.','Flick the loose rope: the whip.','Its horn wears every colour in turn.'];
+const rdHints=[,'Both triggers: swing and let go.','Strike horns with their own colour.|Red is your left, violet your right.','A rearing horn strikes. Both triggers block.','One trigger: lasso. Swing, let go, pull back.','Block its charge, then strike.|A slain giant gives two colours back.','Three colour hits turn the rainbow white.|Clap the arch together: Nova.','Both grips slow time. Draw, then let go.','Grips, raise and slam down: Nova.','Flick the loose rope: the whip.','Its horn wears every colour in turn.'];
 // event → burst [colour (empty: the event's band), count, speed, lift, life]
 const rdB={hit:[,6,2.5],res:[,20,4,.5],kill:[,50,3,2,1.4],crack:[,5,3],catch:[7,6,1.5],caught:[,10,2],yank:[,30,5,1],block:[7,10,4,1],stagger:[7,40,4,1],ready:[7,30,2,1],sigil:[7,40,3,1],unforge:[8,15,1.5,.5],spawn:[8,20,1.5,2,1.4],charge:[,25,4,1]};
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
@@ -131,5 +132,4 @@ export function rdSync(S,ev,dt,H){
   // ---- cue ring
   if(rdCue.visible){rdCueT-=dt;rdCue.material.opacity=.3+.7*(1-max(0,rdCueT)/.9);if(rdCueT<-.3)rdCue.visible=false}
   U.ps.value=H*.021;
-  rdTp.visible=!!rdM.text.replace('\n','');
 }

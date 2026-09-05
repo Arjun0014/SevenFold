@@ -15,13 +15,14 @@ checklist** (with the *Immersive Web Emulator* Chrome extension, or a Quest):
    same-origin on play.js13kgames.com.)
 2. ENTER VR. Expect: the dead forest, standing stones, the red moon, ash falling,
    the rainbow hanging between the two controller positions (white rings),
-   lightning now and then with thunder, the title panel ahead ("SEVENFOLD — Pull
-   a trigger."), no console errors. **The trees and stones stand still** (the
+   lightning now and then with thunder, the title panel ahead: SEVENFOLD, the
+   colour rule, "Pull a trigger", and under it the permanent three-line legend
+   of every verb and sigil (it stays for the whole game), no console errors. **The trees and stones stand still** (the
    width pulse from the r185 instance-colour default is fixed and guarded by
    `node tools/wobble.mjs`).
 3. The first trigger pull recentres the arena on your head and starts the game.
-   Wave 1's panel reads "Both triggers: the arch. / Swing it and let go: the
-   boomerang." Each wave teaches the next verb (docs/09 table): colour matching,
+   Wave 1's panel reads "Both triggers: swing and let go." above the legend.
+   Each wave teaches the next verb (docs/09 table): colour matching,
    block, lasso, the Herald, Nova, the sigils, the slam, the whip, the Sovereign.
    When three colour hits charge the Nova the panel switches to "Nova ready".
 4. Hold both triggers: the rope snaps into a rainbow arch. Swing forward and
@@ -56,11 +57,11 @@ controllers (the trigger verbs all work with hands).
 
 | step | bytes |
 |---|---|
-| source, concatenated | 46,843 |
-| terser (property-mangled) | 32,884 |
-| roadroller -O2 | 17,051 |
-| index.html (inlined) | 17,657 |
-| **dist/sevenfold.zip** | **13,271** (limit 13,312; margin 41) |
+| source, concatenated | 47,036 |
+| terser (property-mangled) | 33,013 |
+| roadroller -O2 | 17,071 |
+| index.html (inlined) | 17,677 |
+| **dist/sevenfold.zip** | **13,286** (limit 13,312; margin 26) |
 
 The shipping build is `node build.js --level 2 --iter 200` (`npm run build`
 also writes `dist/test.html`, the same sources with the `//@test` hook lines —
@@ -131,4 +132,4 @@ the no-block bot dies to the Sovereign.
 - [x] Budget: 12 draw calls desktop / 24 in stereo, ~28k / 56k triangles, 8 transparent meshes, one fog, no shadows, no post-processing.
 - [x] `localStorage` keys `sevenfold_mute`, `sevenfold_best`; never cleared.
 - [x] Original content; no copyrighted names.
-- [x] Every verb and sigil is taught in-game, one lesson per wave, plus the desktop key legend.
+- [x] Every verb and sigil is on the panel for the whole game (the permanent legend), with one lesson per wave above it and the colour rule on the title screen; the desktop key legend maps the keys.

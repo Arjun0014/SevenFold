@@ -9,9 +9,9 @@ const inpHL=[-.36,-.35,.6],inpHR=[.36,-.35,.6]; // desktop hand offsets in head 
 // desktop sigil macros (both grips held, hands drawn in head space, released at the end): u∈[0,1] → [L,R,g]
 // 1 circle (Space) → boomerang, 2 cross (G) → lasso, 3 raise-and-slam (N) → Nova when charged
 const inpGens=[
-  u=>{const a=u*6.6;return[[sin(a)*.2-.1,-.3+cos(a)*.2,.5],[sin(a)*.2+.1,-.3+cos(a)*.2,.5],u<.96?1:0]},
-  u=>{const x=-.15+.5*u;return[[-x,-.3,.5],[x,-.3,.5],u<.96?1:0]},
-  u=>{const y=-.3+(u<.5?u*2:2-u*2)*.5;return[[-.1,y,.5],[.1,y,.5],u<.96?1:0]}];
+  u=>{const a=u*6.6;return[[sin(a)*.2-.1,-.3+cos(a)*.2,.5],[sin(a)*.2+.1,-.3+cos(a)*.2,.5]]},
+  u=>{const x=-.15+.5*u;return[[-x,-.3,.5],[x,-.3,.5]]},
+  u=>{const y=-.3+(u<.5?u*2:2-u*2)*.5;return[[-.1,y,.5],[.1,y,.5]]}];
 export const inpReset=()=>{inpHL.splice(0,3,-.36,-.35,.6);inpHR.splice(0,3,.36,-.35,.6);inpXo=[0,0,0];inpYaw=inpPit=0}; //@test
 export const inpKeys={};             // one-shot keys read by main: r (restart) m (mute)
 export const inpMacro=k=>{if(!inpMac&&k>=1&&k<=3){inpMac=k;inpMacT=0}};
@@ -45,7 +45,7 @@ export function inpPoll(cam,dt){
     H={p:[0,1.6,0],f};L={p:inpHS(inpHL,yaw,H.p),f,t:0,g:0};R={p:inpHS(inpHR,yaw,H.p),f,t:0,g:0};
   }
   if(inpMb[1]||inpK.KeyB)L.t=1;if(inpMb[0]||inpK.KeyB)R.t=1;if(inpK.KeyV)L.g=R.g=1;
-  if(inpMac){inpMacT+=dt;const u=min(1,inpMacT/[.9,.7,.7][inpMac-1]),[l,r,g]=inpGens[inpMac-1](u);L={...L,p:inpHS(l,yaw,H.p),t:0,g};R={...R,p:inpHS(r,yaw,H.p),t:0,g};
+  if(inpMac){inpMacT+=dt;const u=min(1,inpMacT/[.9,.7,.7][inpMac-1]),[l,r]=inpGens[inpMac-1](u),g=u<.96?1:0;L={...L,p:inpHS(l,yaw,H.p),t:0,g};R={...R,p:inpHS(r,yaw,H.p),t:0,g};
     if(u>=1){inpMac=0;inpHL.splice(0,3,-.36,-.35,.6);inpHR.splice(0,3,.36,-.35,.6);inpXo=[0,0,0]}}
   return{L,R,H};
 }

@@ -10,7 +10,7 @@ mB.id='b';mH.id='h';mH.textContent='LMB/RMB triggers · B arch · V grips · Spa
 document.body.append(mB,mH);
 let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
 let R;try{R=new T.WebGLRenderer({antialias:true})}catch(e){}
-if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'WebGL is needed.':'Could not load Three.js. Check the connection and reload.'}
+if(!R){mB.remove();mH.remove();mU.textContent=T&&T.WebGLRenderer?'WebGL is needed.':'Could not load Three.js. Check the connection.'}
 else{
   R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.setSize(innerWidth,innerHeight);document.body.append(R.domElement);
   let seed=Date.now()>>>10,sim=createSim(seed),acc=0,last=0,evLog=[],started=0,mute=0;

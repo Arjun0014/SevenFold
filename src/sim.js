@@ -173,7 +173,9 @@ const waves=w=>{const trig=trigEdge(S._L)||trigEdge(S._R);
   if(S._ws>=3){S._wt-=w;if(S._ws==4)S._dawn=min(1,S._dawn+w/8);if(S._wt<=0&&trig){S._init();S._ws=2;S._wt=1.5;ev('restart')}return}
   S._wtime+=w;
   if(S._q.length){S._st-=w;if(S._st<=0){S._st=S._iv;const v=S._q.shift();spawn(v,S._front+S._spread*(rnd()*2-1),v==1?14:9+rnd()*3)}}
-  else if(!S._en.some(e=>e._st!=5)){S._log.push([S._wave,S._wtime]);S._score+=100*S._wave;S._ws=2;S._wt=3;ev('clear',0,0,S._wave)}
+  else if(!S._en.some(e=>e._st!=5)){
+    S._log.push([S._wave,S._wtime]); //@test
+    S._score+=100*S._wave;S._ws=2;S._wt=3;ev('clear',0,0,S._wave)}
 };
 
 // ---------- public API ----------

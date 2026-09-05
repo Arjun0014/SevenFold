@@ -1,7 +1,7 @@
 # SEVENFOLD
 
 A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
-Rainbows*), category **WebXR**. One `index.html`, 13,271 bytes zipped, plus the
+Rainbows*), category **WebXR**. One `index.html`, 13,286 bytes zipped, plus the
 competition's hosted Three.js.
 
 You are a mage holding the last rainbow. The Umbra took the colour out of the
@@ -17,7 +17,9 @@ colour from where it stands — the horde is the music.
 
 - **Headset**: open the entry on play.js13kgames.com in the Quest/Pico/PC-VR
   browser, ENTER VR, pull a trigger. Controllers or hand tracking (pinch =
-  trigger). Nothing uses thumbsticks or buttons other than trigger/grip.
+  trigger). Nothing uses thumbsticks or buttons other than trigger/grip. The
+  panel ahead always shows the legend of every verb and sigil, with one lesson
+  per wave above it, so nothing below needs to be memorised.
 - **Desktop** (for testing and judging without a headset): `npm run dev` and open
   <http://localhost:8080/dist/>. PLAY ON DESKTOP, click the canvas, pull a trigger
   (left mouse button).

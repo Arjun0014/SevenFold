@@ -442,3 +442,16 @@ cut ... write proper test scripts."
   arch, sigils could not forge, and a later trigger edge restarted the game.
   `disconnected` now clears select and squeeze with the connected flag (+6
   bytes). The audit checks "no stuck triggers after the switch".
+
+## Permanent legend (session 2026-09-06)
+
+- The user pointed out that the key legend at the bottom of the page is desktop
+  only and that headset players need to know the moves from the start and see
+  them at all times. The panel canvas is now 1024×512 on a 3.2 × 1.6 m plane
+  (one draw call as before), always visible: title, up to two wave-hint lines,
+  and a permanent three-line legend in a dimmer serif (30 px, every line under
+  800 px so Android's wider serif still fits). The title screen carries the
+  colour rule and "Pull a trigger". Wave hints shrank to one line where the
+  legend already says it. Paid for by moving the bot's per-wave time log to a
+  `//@test` line, folding the grip flag out of the three desktop sigil
+  generators, and a shorter offline message. Zip 13,286 bytes (26 under; the PLAY button moved below the panel on desktop).
