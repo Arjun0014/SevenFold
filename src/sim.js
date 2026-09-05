@@ -20,7 +20,7 @@ const edist=(e,q)=>min(dist(q,bc(e))-.5*e._sc,dist(q,hd(e))-.3*e._sc);
 
 export function createSim(seed){
 const S={_seed:seed};
-const hand=x=>({p:[x,1.2,.3],q:[0,0,0,1],v:[0,0,0],t:0,g:0,pt:0,pp:[x,1.2,.3],ht:0});
+const hand=x=>({p:[x,1.2,.3],q:[0,0,0,1],v:[0,0,0],t:0,g:0,pt:0,pp:[x,1.2,.3],ht:0,n:0});
 const rnd=()=>S._rng();
 const ev=(k,p,b,d)=>S._ev.push({k,p:p?[...p]:0,b:b|0,d});
 const fwd=()=>qrot(S._H.q,[0,0,-1]);
@@ -31,7 +31,7 @@ const resetRope=()=>{S._tip=0;for(let i=0;i<=N;i++){S._rp[i]=lerp(S._L.p,S._R.p,
 S._init=()=>{
   S._rng=mulberry(S._seed);S._L=hand(-.3);S._R=hand(.3);S._H={p:[0,1.6,0],q:[0,1,0,0]};
   S._rp=[];S._rq=[];S._rv=[];for(let i=0;i<=N;i++){S._rp.push([0,0,0]);S._rq.push([0,0,0]);S._rv.push([0,0,0])}resetRope();
-  S._md=0;S._bm=0;S._ls=0;S._ch=0;S._crk=0;S._nv=0;S._tip=0;S._tipI=N>>1;S._pd=0;
+  S._md=0;S._bm=0;S._ls=0;S._ch=0;S._crk=0;S._nv=0;S._tip=0;S._tipI=N>>1;S._pkt=0;S._pd=[0,0,1];S._tk=0;S._tkt=0;S._tv=[0,0,1];
   S._light=7;S._inv=0;S._en=[];S._wave=0;S._ws=0;S._wt=0;S._q=[];S._st=0;S._wtime=0;S._front=0;S._log=[];
   S._t=0;S._score=0;S._ev=[];S._bolt=4;S._dawn=0;S._kills=0;
 };
@@ -93,15 +93,15 @@ const modes=()=>{
     if(ls.out){ls.v[1]-=8*DT;const n=near(ls.p,3)[0];if(n)ls.v=lerp(ls.v,mul(norm(sub(hd(n[0]),ls.p)),len(ls.v)),.12); // aim assist
       ls.p=add(ls.p,mul(ls.v,DT));if(ls.p[1]<.1)ls.p[1]=.1;if(n&&!(n[0]._boss&&n[0]._st==9)){const e=n[0];e._st=4;e._tm=0;e._rear=0;ls.e=e;ls.t=0;ev('caught',hd(e),e._b);return}
       if(ls.t>1.3||len(ls.p)>14)endLasso();return}
-    if(!ls.h.t){if(S._tip>=3){ls.out=1;ls.t=0;ls.p=[...S._rp[N]];ls.v=mul(norm(S._rv[N]),min(13,S._tip*1.3));ev('lasso',ls.p,ls.b)}else endLasso();return}
+    if(S._tip>=3){S._tk=S._tip;S._tkt=.5;S._tv=norm(S._rv[N])}else if(S._tkt>0)S._tkt-=DT;
+    if(!ls.h.t){if(S._tkt>0){ls.out=1;ls.t=0;ls.p=[...S._rp[N]];ls.v=mul(S._tv,min(13,S._tk*1.3));S._tkt=0;ev('lasso',ls.p,ls.b)}else endLasso();return}
     if(both)endLasso();return}
-  if(md==1){
-    if(!both){const v=lerp(L.v,R.v,.5),sp=len(v);
-      if(sp>=2.5&&sp<20){const m=mid();S._md=3;S._bm={p:m,o:S._rp.map(p=>sub(p,m)),d:norm(v),t:0,hit:new Set,ret:0,h:L.t?L:R};ev('throw',m,0,sp)}
+  if(md==1){const v=lerp(L.v,R.v,.5),sp=len(v);if(sp>=2.5&&sp<20){S._pkt=.5;S._pd=norm(v)}else if(S._pkt>0)S._pkt-=DT; // release grace
+    if(!both){if(S._pkt>0){const m=mid();S._md=3;S._bm={p:m,o:S._rp.map(p=>sub(p,m)),d:S._pd,t:0,hit:new Set,ret:0,h:L.t?L:R};S._pkt=0;ev('throw',m)}
       else S._md=0}
-    else{const d=dist(L.p,R.p),cl=(S._pd-d)/DT;S._pd=d;if(S._ch>=3&&d<.15&&cl>=2)nova()}
+    else{const d=dist(L.p,R.p),cl=dot(sub(R.v,L.v),norm(sub(L.p,R.p)));if(S._ch>=3&&d<.15&&cl>=2)nova()}
     return}
-  if(both){S._md=1;S._pd=dist(L.p,R.p);ev('arc',mid())}
+  if(both){S._md=1;ev('arc',mid())}
   else{const h=L.t?L:R.t?R:0;if(h&&h.ht>=.25){S._md=2;S._ls={h,b:h==L?6:0,out:0,e:0,t:0};ev('rope',h.p,h==L?6:0)}}
 };
 const boom=()=>{const B=S._bm;if(!B)return;B.t+=DT;
@@ -169,7 +169,8 @@ const cp=(a,b)=>{for(const k in b)if(b[k]!=null)a[k]=b[k]};
 S.inject=(L,R,H)=>{L&&cp(S._L,L);R&&cp(S._R,R);H&&cp(S._H,H)}; // {p,q,t,g}, {p,q}; arrays are never mutated by the sim
 S.step=n=>{for(let i=0;i<(n||1);i++){
   S._t+=DT;if(S._nv>0)S._nv-=DT;const w=S._nv>0?DT*.15:DT;
-  for(const h of[S._L,S._R]){h.t=h.t||h.g?1:0;h.v=lerp(h.v,mul(sub(h.p,h.pp),1/DT),.5);h.pp=[...h.p]}
+  // hand velocity per pose update, not per step: a display frame can cover two sim steps (72 Hz vs 90 Hz)
+  for(const h of[S._L,S._R]){h.t=h.t||h.g?1:0;h.n++;const p=h.p,q=h.pp;if(p[0]!=q[0]||p[1]!=q[1]||p[2]!=q[2]){h.v=lerp(h.v,mul(sub(p,q),1/(DT*h.n)),.5);h.pp=[...p];h.n=0}else if(h.n>3)h.v=mul(h.v,.7)}
   if(S._inv>0)S._inv-=w;
   S._bolt-=DT;if(S._bolt<=0){S._bolt=6+rnd()*9;const a=rnd()*6.28;ev('bolt',[sin(a)*32,0,cos(a)*32],floor(rnd()*7))}
   rope();modes();strikes();boom();enemies(w);waves(w);

@@ -1,7 +1,7 @@
 # SEVENFOLD
 
 A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
-Rainbows*), category **WebXR**. One `index.html`, 13,245 bytes zipped, plus the
+Rainbows*), category **WebXR**. One `index.html`, 13,260 bytes zipped, plus the
 competition's hosted Three.js.
 
 You are a mage holding the last rainbow. The Umbra took the colour out of the
@@ -42,11 +42,12 @@ gone until you kill a giant (+2).
 
 ```bash
 npm install
-node build.js                      # dist/index.html + dist/sevenfold.zip (fails above 13,312 bytes)
+node build.js --level 2            # dist/index.html + dist/sevenfold.zip (fails above 13,312 bytes)
 npm run dev                        # http://localhost:8080/ (sources) and /dist/ (the build)
 node test/sim.test.js              # Node: rope, verbs, resonance, bots, determinism (~2 min)
 node test/browser.test.js chromium --xr   # Playwright: built zip, desktop + XR shim
 node tools/botrun.mjs 1 8          # perfect bot, seeds 1–8, per-wave clear times
+node tools/iwer.mjs                # the built zip through Meta's WebXR emulation runtime (Quest 3 profile)
 ```
 
 The dev server swaps the hosted Three.js URL for a local byte-identical copy

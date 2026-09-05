@@ -100,7 +100,7 @@ export function rdInit(T_,R){
   rdM.U=U;rdM.W=W;rdM.S=rdScene;rdM.C=rdCam; //@test
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
-const rdHints={1:'Hold both triggers. Swing. Let go.',2:"Match a horn's colour to shatter it.",3:'Hold both triggers to block a charge.',4:'One trigger: swing the lasso. Let go. Pull.',6:'Three colour hits: clap the rainbow.',7:'Chargers come from the dark. Block, then strike.'};
+const rdHints={1:'Hold both triggers. Swing. Let go.',2:"Match a horn's colour to shatter it.",3:'Hold both triggers to block a charge.',4:'One trigger: swing the lasso. Let go. Pull.',6:'Three colour hits: clap the rainbow.',7:'Chargers: block, then strike.'};
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
 
 export function rdSync(S,ev,dt,H){

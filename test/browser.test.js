@@ -98,7 +98,7 @@ async function runBrowser(bn){
       await p3.evaluate(()=>__xr.frames(300));await p3.waitForTimeout(300);
       await p3.evaluate(()=>__xr.press('right','select'));await p3.waitForTimeout(100);await p3.evaluate(()=>__xr.release('right','select'));await p3.waitForTimeout(2200);
       const r=await p3.evaluate(async()=>{await __xr.throw();return SF.state()});if(!r.events.includes('throw'))throw new Error('no throw after the swing: '+r.events.slice(-20)+' mode '+r.mode);
-      await p3.waitForTimeout(1800);const r2=await p3.evaluate(()=>SF.state());if(!r2.events.includes('catch'))throw new Error('boomerang not caught: '+r2.events.slice(-20));
+      await p3.waitForFunction(()=>SF.state().events.includes('catch'),{timeout:6000}).catch(()=>{});const r2=await p3.evaluate(()=>SF.state());if(!r2.events.includes('catch'))throw new Error('boomerang not caught: '+r2.events.slice(-20));
       await p3.screenshot({path:`test-results/${bn}-xr.png`});await p3.evaluate(()=>__xr.end());await p3.waitForFunction(()=>!SF.state().xr,{timeout:5000});
       await p3.waitForTimeout(500);const s=await p3.evaluate(()=>SF.state());if(s.xr)throw new Error('still in XR');await p3.close()});
   }

@@ -9,7 +9,7 @@ export async function xrInit(renderer,btn,onStart,onEnd){
     on('disconnected',()=>{h.on=0});   // pose freezes at its last value (input.js)
     on('selectstart',()=>h.t=1);on('selectend',()=>h.t=0);on('squeezestart',()=>h.q=1);on('squeezeend',()=>h.q=0)}
   btn.onclick=async()=>{btn.hidden=true;onStart();if(!xrS.sup)return;
-    try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking']});
+    try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','hand-tracking']});
       renderer.xr.enabled=true;renderer.xr.setFoveation(1);renderer.xr.setReferenceSpaceType('local-floor');await renderer.xr.setSession(s);
       xrS.on=1;s.addEventListener('end',()=>{xrS.on=0;renderer.xr.enabled=false;btn.hidden=false;onEnd()})}
     catch(e){renderer.xr.enabled=false;btn.hidden=false}};

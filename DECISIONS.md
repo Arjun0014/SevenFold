@@ -276,3 +276,29 @@ weapons, innovative music and VR-worthy sound effects. Asked once, answered:
 |---|---|---|---|---|
 | rehaul, first full build (level 1) | 45,346 | 33,205 | 16,730 | 13,044 |
 | visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | **13,245** |
+
+## Emulator pass (2026-09-05, user present)
+
+The user installed the Immersive Web Emulator and reported "seems like there's
+bugs" and that the controls felt hard without a controller. The emulator is
+built on Meta's IWER runtime, so `tools/iwer.mjs` now drives the built zip
+through IWER (Quest 3 profile) in Chromium. Findings and fixes:
+
+- **Hand velocity was estimated per sim step.** A 72 Hz display frame covers
+  two 90 Hz steps; the second step saw an unchanged pose and halved the measured
+  speed, so throws and claps were unreliable on real hardware. Velocity is now
+  computed per pose update (delta over the steps since the last change) and
+  decays only after three unchanged steps. The Nova's closing speed uses the
+  hand velocities instead of a per-step distance delta.
+- **Release grace (0.5 s).** In the emulator you cannot drag a controller and
+  press a button at the same time, and in VR people let go slightly after the
+  peak of a swing. A fast swing of the arch is remembered for half a second and
+  a release inside that window throws in the remembered direction; the lasso
+  loop likewise. A slow release with no recent swing still just drops the arch.
+- `onresize` no longer calls `setSize` while presenting (Three warned).
+- `bounded-floor` is no longer requested (unused). Roadroller level 2 is the
+  shipping build (13,260 bytes).
+- IWER results on the final zip: ENTER VR offered, session start, first trigger
+  starts the game, both triggers → arch, swing → throw → hit → kill → catch,
+  one trigger → lasso → caught → yank → kill, both squeezes → arch, hand
+  tracking: one pinch → lasso, two → arch, session end → desktop, zero errors.

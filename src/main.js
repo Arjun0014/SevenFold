@@ -7,7 +7,7 @@ import {auInit,auSync} from './audio.js';
 import {yawOf} from './vec.js';
 
 const mU=document.getElementById('u'),mB=document.createElement('button'),mH=document.createElement('div');
-mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Mouse look · LMB/RMB triggers · B hold both (arch, blocks) · Space throw · G lasso · N clap (Nova) · WASD/QE hands · R restart · M mute';
+mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Mouse look · LMB/RMB triggers · B both (arch) · Space throw · G lasso · N Nova · WASD/QE hands · R restart · M mute';
 document.body.append(mB,mH);
 let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
 let R;try{R=new T.WebGLRenderer({antialias:true})}catch(e){}
@@ -18,7 +18,7 @@ else{
   try{mute=localStorage.getItem('sevenfold_mute')=='1'}catch(e){}
   const {scene,cam,world}=rdInit(T,R);
   inpInit(R.domElement);
-  onresize=()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)};
+  onresize=()=>{if(xrS.on)return;cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)};
   const save=()=>{try{const b=JSON.parse(localStorage.getItem('sevenfold_best')||'{}');if(!b.score||sim._score>b.score)localStorage.setItem('sevenfold_best',JSON.stringify({wave:sim._wave,score:sim._score,time:sim._t|0}))}catch(e){}};
   const recentre=()=>{const y=yawOf([cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]);inpO.x=cam.position.x;inpO.z=cam.position.z;inpO.y=y;world.position.set(inpO.x,0,inpO.z);world.rotation.y=y};
   const SF=window.SF={manual:0,rec:0,rd:rdM,R,

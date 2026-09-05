@@ -3,8 +3,12 @@
 ## 0. Do these by hand before submitting (top item)
 
 **Manual emulator checklist** — the automated tests cover the desktop path in
-Chromium and the real WebXR code path through a fake `navigator.xr` (docs/07 C);
-nothing has run on a headset. With Meta's *Immersive Web Emulator* Chrome
+Chromium, the WebXR code path through a fake `navigator.xr` (docs/07 C), and a
+full pass through Meta's Immersive Web Emulation Runtime (`node tools/iwer.mjs`:
+the runtime inside the Immersive Web Emulator, Quest 3 profile — session start,
+first-trigger start, arch, throw/hit/catch, lasso/catch/yank, grips as
+triggers, hand-tracking pinches, session end, zero errors). Nothing has run on
+a headset. With Meta's *Immersive Web Emulator* Chrome
 extension (or the WebXR API Emulator):
 
 1. `npm run dev`, open `http://localhost:8080/dist/` in Chrome with the extension.
@@ -29,7 +33,11 @@ extension (or the WebXR API Emulator):
    12) and triangles (`tris`, ~30k).
 7. Press the emulator's exit → the page returns to desktop mode with the
    PLAY ON DESKTOP / ENTER VR button, no errors.
-8. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
+8. In the emulator you cannot move a controller and press a button at the same
+   time, so the game remembers a fast swing for half a second: swing the
+   controllers forward quickly in the panel, then release the triggers. The same
+   grace applies to the lasso.
+9. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
 
 **Firefox** could not be run on the build machine: Playwright's Firefox binary
 fails to start with a Windows side-by-side error ("Dependent Assembly mozglue …
@@ -45,13 +53,13 @@ giant on desktop before submitting and tell me what to change.
 
 | step | bytes |
 |---|---|
-| source, concatenated | 45,896 |
-| terser (property-mangled) | 33,639 |
-| roadroller -O1 | 16,992 |
-| index.html (inlined) | 17,632 |
-| **dist/sevenfold.zip** | **13,245** (limit 13,312; margin 67) |
+| source, concatenated | 46,276 |
+| terser (property-mangled) | 33,896 |
+| roadroller -O2 | 17,017 |
+| index.html (inlined) | 17,657 |
+| **dist/sevenfold.zip** | **13,260** (limit 13,312; margin 52) |
 
-Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
+The shipping build is `node build.js --level 2` (`npm run build`). Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
 zip by ±15 bytes. `build.js` fails above the limit, so a rebuild can never ship
 an oversized file unnoticed.
 
@@ -91,6 +99,7 @@ ash and the boss mist (≈60 bytes), the ground grain (≈90), the standing ston
 | mute persists, best score saved | ok | not run |
 | offline three.js → friendly message | ok | not run |
 | XR shim: enter, 300 frames, throw + catch, exit | ok | n/a |
+| IWER (Immersive Web Emulator runtime, Quest 3): enter, start, arch, throw, lasso, grips, pinches, exit | ok | n/a |
 | `node test/sim.test.js` | 19/19 | — |
 
 Perfect-bot clear times (seconds, seeds 1–8): waves 11–12, 15–16, 19–21, 18–20,
