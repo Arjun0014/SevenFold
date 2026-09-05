@@ -202,3 +202,77 @@ dies to Gloam on every seed; idle bot loses all Light by 19 s.
 - A stale dev server from this session was holding port 8080 with the old
   serve.js (no CORS rewrite), which is why `localhost:8080/dist/` showed the
   "needs the hosted Three.js" message; killed and restarted.
+
+## The rehaul (2026-09-05, user present)
+
+The user played the first build and rejected it: "looks absolutely shit, the world,
+the enemies, everything", too many bosses, the objective unclear, the sound
+irritating. Instruction: a complete rehaul; the look is the main thing (a grimy
+Stranger-Things world with particles like snow and lightning), one enemy type
+(unicorns with coloured horns) plus a huge boss unicorn, about ten waves, better
+weapons, innovative music and VR-worthy sound effects. Asked once, answered:
+
+- **Player**: "a mage coming to save the unicorn world"; enemies of one type, the
+  unicorns; no unicorn to guard ("unnecessary").
+- **Health**: yes to "seven colours are seven lives" (bands grey out from violet).
+- **Weapons**: "the 2-hand boomerang (main weapon), lasso, a powerful area move;
+  you decide how it needs to be." → the sigil forge and the five forms are gone.
+- **Music**: the adaptive "choir of horns".
+
+### Design decisions (docs/09 is the spec)
+
+- Five verbs, all physical states of the rope and the triggers: free rope (whip),
+  arch (both triggers: blocks, melee), boomerang (release the arch at ≥ 2.5 m/s
+  and < 20 m/s — teleports are not throws), lasso (one trigger ≥ 0.25 s; the loop
+  is the far colour: right hand red, left hand violet; aim assist within 3 m so
+  VR players can catch), Nova (charged arch + clap). Squeeze counts as trigger so
+  grips and pinches both work; hand tracking gets everything (one pinch = lasso,
+  two = arch).
+- The bow is gone (the boomerang is the ranged verb); the whip stays because the
+  rope physics already gives it.
+- One enemy species with three variants by numbers only (stalker / charger /
+  brute) and the giant appearing twice (Herald wave 5 scale 2.2, Sovereign wave 10
+  scale 3.4 with a colour-cycling horn) — one model, one InstancedMesh, one
+  shader, so the "single enemy type" the user asked for costs nothing extra.
+- Giant loop: circle → telegraph (rear + horn lightning + rising sound) → charge;
+  blocked charge = 3.5 s stagger in front of you = the damage window. Every third
+  attack is a lightning rune to sidestep. Summons keep the horde (and the music)
+  alive during the fight.
+- Ten waves as tabled in docs/09, tuned with the bot until seeds 1–8 all reach
+  Dawn with seven colours and the per-wave times sit in 11–33 s (Herald 16–50 s,
+  Sovereign ~60 s). Bot fixes that drove tuning: abort a throw when danger
+  appears mid-windup; never throw with a charger inside 12 m, a stalker inside
+  3.5 m or a giant telegraphing; melee-swing at ≤ 2.1 m with the arch held at
+  the target's body height (the first swing missed chargers: too high); the
+  giant's circle timer starts only inside 8 m (it used to attack the instant it
+  arrived); its telegraph is 1.3–1.4 s and it charges at 8 m/s.
+
+### Rendering decisions
+
+- No Three lights; one ShaderMaterial for every dark thing. Three r185 gives
+  custom shaders the **fog colour in output colour space** and writes it into the
+  uniform's Color object every frame — sharing the scene fog's own Color object
+  fed it back through the conversion each frame and bleached the fog to white.
+  The uniform now has its own Color, and all colours our shaders use are created
+  raw (setHex with 'srgb-linear') since ShaderMaterial output is not encoded.
+- Ground grain is a cell hash of the world position with mod 64 on the cell
+  index (large sin arguments lost precision and produced stripes).
+- Particles are GPU-aged (birth/life attributes) so the CPU only writes spawns.
+- Desktop hands sit at (±0.36, −0.25, 0.6) so the sagging rope is in view.
+- The //@test tag strips whole lines: the title call once shared a line with
+  a debug hook and vanished from the build; hooks now sit on their own line.
+
+### Sound decisions
+
+- Everything on one seven-note scale (Phrygian on A, Lydian at Dawn) so the horns,
+  the hits and the chime all agree; per-unicorn voices are panned PannerNodes
+  positioned in arena space with the listener on the head; nearest ten only.
+- A feedback echo instead of a convolver (no impulse to load).
+- Thunder is delayed by distance/60 (audibly late, not physically late).
+
+### Size log
+
+| step | raw | min | rolled | zip |
+|---|---|---|---|---|
+| rehaul, first full build (level 1) | 45,346 | 33,205 | 16,730 | 13,044 |
+| visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | **13,222** |

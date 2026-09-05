@@ -1,327 +1,186 @@
 // sim.js — PURE game simulation. No DOM, no Three. Fixed DT, seeded, deterministic.
-// Arena space: player at origin, y up, unicorn at (0,0,-1.8); "front" at game start = +z.
-import {sin,cos,abs,min,max,hypot,sqrt,PI,atan2,floor,add,sub,mul,dot,cross,len,dist,norm,lerp,clamp,qrot,yawOf,segd} from './vec.js';
+// Arena space: player at origin, y up. The rainbow rope hangs between the hands; its mode is physical:
+//   0 free rope (whip)  1 arch: both triggers, rigid, blocks; let go while swinging → 3 boomerang
+//   2 lasso: one trigger held, rope hangs from that hand; let go while swinging → loop flies, catches, yank kills
+//   3 boomerang in flight (hands empty)  4 nova collapse (arch clapped together with a full charge)
+import {sin,cos,abs,min,max,hypot,PI,atan2,floor,add,sub,mul,dot,len,dist,norm,lerp,clamp,qrot,yawOf} from './vec.js';
 
-export const DT=1/90,N=28,REST=.9,SEG=REST/N;
-export const WN=['rope','lance','halo','maul','shards','prism'];
-// enemy table: hp, speed, radius, half-height, hit-centre height
-const ET=[[3,4.5,.25,0,1.5],[9,1.2,.35,.7,1.1],[6,.6,.6,0,.5],[6,.9,.45,0,.6],[1,3.5,.15,0,1.4]];
-// waves: [interval, spread(deg), type,count, ...]; single number = boss id
-const WAVES=[[3,40,0,5],[2.6,60,0,4,1,2],[2.6,90,2,2,0,4],[0],[1.8,120,0,6,1,3,2,1],[2.3,120,3,2,0,4],[3.2,180,4,1,2,2,1,2],[1]];
-WAVES.push([2.4,180,4,2,3,2],[1.5,180,2,4,1,4,0,6],[3,180,3,3,4,1,2,3,1,4],[2]); //@eclipse
-const UNI=[0,.9,-1.8]; // unicorn body centre
-const F=[0,0,-1]; // controller forward in controller space
-const bpos=(b,r,y)=>[sin(b)*r,y,cos(b)*r];
-const hd=(a,b)=>hypot(a[0]-b[0],a[2]-b[2]); // horizontal distance
-const bandOf=s=>clamp(floor(s*7),0,6);
+export const DT=1/90,N=28,SEG=.9/N;
+// variants: hp, speed, scale, gore damage, rear time. 0 stalker 1 charger 2 brute 3 herald 4 sovereign
+const VT=[[3,2.4,1,1,.75],[2,7,.8,1,0],[8,1.3,1.6,2,1],[100,3,2.2,1,1.4],[160,3.5,3.4,2,1.3]];
+// waves: [interval, spread(deg), stalkers, chargers, brutes] or [boss variant]
+const WAVES=[[3,40,4,0,0],[2.5,70,6,0,0],[2.4,100,5,3,0],[2.2,140,4,3,1],[3],[2,180,8,0,2],[1.8,180,4,6,0],[2.2,180,6,3,3],[1.6,180,10,6,2],[4]];
+const bpos=(b,r)=>[sin(b)*r,0,cos(b)*r];
 const mulberry=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
-
-// ---------- sigil recogniser (module level, pure) ----------
-export const recognise=(M,D)=>{
-  const n=M.length;if(n<2)return 0;
-  let path=0,hp=0,rise=0,drop=0,ri=0,dmax=0,dmin=9,twist=0,crossed=0,y0=M[0][1],an=M[0];
-  const dl=D.map(len);
-  for(let i=0;i<n;i++){const l=dl[i];dmax=max(dmax,l);dmin=min(dmin,l);if(D[i][0]<-.05)crossed=1;
-    if(i){const ad=dist(M[i],an);if(ad>.06){path+=ad;an=M[i]}const a=D[i-1],b=D[i],dm=sub(M[i],M[i-1]),dd=mul(sub(b,a),.5);hp+=len(sub(dm,dd))+len(add(dm,dd));const ang=atan2(a[0]*b[1]-a[1]*b[0],a[0]*b[0]+a[1]*b[1]);if(hypot(a[0],a[1])>.03&&hypot(b[0],b[1])>.03)twist+=ang}
-    const r=M[i][1]-y0;if(r>rise){rise=r;ri=i}}
-  for(let i=ri;i<n;i++)drop=max(drop,M[ri][1]-M[i][1]);
-  if(hp<.2)return 0;
-  let loop=0;
-  for(let j=3;j<n&&!loop;j++){let pl=0;for(let i=j-1;i>=0;i--){pl+=dist(M[i+1],M[i]);if(pl>=.6&&dist(M[i],M[j])<.12){let ar=[0,0,0];for(let k=i;k<j;k++)ar=add(ar,cross(sub(M[k],M[i]),sub(M[k+1],M[i])));if(len(ar)*.5>=.05){loop=1;break}}}}
-  const d0=dl[0],d1=dl[n-1],cr=crossed&&D[n-1][0]>.15;twist=abs(twist)*180/PI;
-  recognise.feat={path,hp,rise,drop,dmax,dmin,twist,cr,loop,d0,d1}; //@test
-  return cr&&d1>.5?4:d1<.35&&rise>.35&&drop>.35&&!loop?3:d1<.4&&loop?2:dmax<.45&&twist>150?5:d1>1.1&&d0<.6&&path<.5?1:0;
-};
+export const band=s=>clamp(floor(s*7),0,6);
+// enemy head point and body centre (arena space)
+export const hd=e=>{const s=e._sc;return add(e._p,[sin(e._yaw)*.75*s,1.35*s,cos(e._yaw)*.75*s])};
+const bc=e=>[e._p[0],.8*e._sc,e._p[2]];
+const edist=(e,q)=>min(dist(q,bc(e))-.5*e._sc,dist(q,hd(e))-.3*e._sc);
 
 export function createSim(seed){
 const S={_seed:seed};
-const hand=x=>({p:[x,1.2,.3],q:[0,0,0,1],v:[0,0,0],t:0,g:0,pt:0,pp:[x,1.2,.3]});
+const hand=x=>({p:[x,1.2,.3],q:[0,0,0,1],v:[0,0,0],t:0,g:0,pt:0,pp:[x,1.2,.3],ht:0});
 const rnd=()=>S._rng();
 const ev=(k,p,b,d)=>S._ev.push({k,p:p?[...p]:0,b:b|0,d});
-const yaw=()=>yawOf(S._H.q);
-const fwdOf=h=>qrot(h.q,F);
+const fwd=()=>qrot(S._H.q,[0,0,-1]);
+const hx=()=>[S._H.p[0],0,S._H.p[2]];
+const mid=()=>lerp(S._L.p,S._R.p,.5);
+const resetRope=()=>{S._tip=0;for(let i=0;i<=N;i++){S._rp[i]=lerp(S._L.p,S._R.p,i/N);S._rq[i]=[...S._rp[i]]}};
 
 S._init=()=>{
-  S._rng=mulberry(S._seed);
-  S._L=hand(-.3);S._R=hand(.3);
-  S._H={p:[0,1.6,0],q:[0,1,0,0]}; // facing +z (yaw 0 => forward +z)
-  S._ht=0; // hand-tracking mode (pinch forge)
-  S._rp=[];S._rq=[];S._rv=[];
-  for(let i=0;i<=N;i++){const p=lerp(S._L.p,S._R.p,i/N);S._rp.push(p);S._rq.push([...p]);S._rv.push([0,0,0])}
-  S._ten=0;S._tip=0;S._tipI=N>>1;S._crk=0;
-  S._wp=0;S._fg={on:0,t:0,M:[],D:[],cd:0,pin:0};
-  S._bow=0;
-  S._spec=0;S._light=5;S._inv=0;
-  S._en=[];S._pr=[];S._ar=[];
-  S._wave=0;S._ws=0;S._wt=0;S._q=[];S._st=0;S._wtime=0;S._front=0;S._log=[];
-  S._t=0;S._score=0;S._ring=0;S._ev=[];
-  S._halo={out:0,id:0};S._sh=[0,0];S._lt=[0,0,0];S._mh=[0,0,0];S._slam=0;
-  S._beam=0;S._dark=0;
+  S._rng=mulberry(S._seed);S._L=hand(-.3);S._R=hand(.3);S._H={p:[0,1.6,0],q:[0,1,0,0]};
+  S._rp=[];S._rq=[];S._rv=[];for(let i=0;i<=N;i++){S._rp.push([0,0,0]);S._rq.push([0,0,0]);S._rv.push([0,0,0])}resetRope();
+  S._md=0;S._bm=0;S._ls=0;S._ch=0;S._crk=0;S._nv=0;S._tip=0;S._tipI=N>>1;S._pd=0;
+  S._light=7;S._inv=0;S._en=[];S._wave=0;S._ws=0;S._wt=0;S._q=[];S._st=0;S._wtime=0;S._front=0;S._log=[];
+  S._t=0;S._score=0;S._ev=[];S._bolt=4;S._dawn=0;S._kills=0;
 };
 S._init();
 
-// ---------- player damage ----------
-const hurt=n=>{if(S._inv>0||S._ws!=1)return;S._light=max(0,S._light-n);S._inv=1;ev('light',S._H.p,0,S._light);if(S._light<=0){S._ws=3;S._wt=3;ev('over')}};
-const addSpec=n=>{S._spec=min(3,S._spec+n)};
-
-// ---------- enemies ----------
-const partPos=(e,pt)=>{const o=pt._o;if(e._boss>=0)return add(e._p,add(mul(e._rt,o[0]),add([0,o[1],0],mul(e._fw,o[2]))));return add(e._p,o)};
-const alive=e=>e._hp>0;
-const spawn=(t,b,r)=>{
-  const T=ET[t],e={_t:t,_p:bpos(b,r||9+rnd()*3,T[4]),_hp:1,_spd:T[1],_r:T[2],_hh:T[3],_b:floor(rnd()*7),_stg:0,_cd:0,_kv:[0,0,0],_ph:rnd()*6.28,_at:0,_st:0,_boss:-1,_parts:[],_flare:0,_alt:1};
-  if(t==3){const n=3+floor(rnd()*3);for(let i=0;i<n;i++)e._parts.push({_o:bpos(i/n*6.28,.35,0),_hp:4,_b:floor(rnd()*7),_pl:1,_r:.3});e._parts.push({_o:[0,0,0],_hp:6,_b:e._b,_core:1})}
-  else if(t==4){for(let i=0;i<10;i++)e._parts.push({_o:bpos(i*.628,.5,0),_hp:1,_b:e._b})}
-  else e._parts.push({_o:[0,0,0],_hp:T[0],_b:e._b});
-  S._en.push(e);ev('spawn',e._p,e._b,t);return e};
-const killE=e=>{e._hp=0;S._score+=e._boss>=0?500:10;ev('kill',e._p,e._b,e._t);if(e._boss>=0){S._ring++;S._light=min(5,S._light+2);ev('bossdead',e._p,0,e._boss);if(e._boss==WAVES.length/4-1){S._log.push([S._wave,S._wtime]);S._ws=4;S._wt=6;ev('dawn')}}};
-const partHit=(e,pt,src)=>{ // can this source hit this part now?
-  if(pt._hp<=0||e._inv)return 0;
-  if(pt._core&&e._parts.some(q=>q._pl&&q._hp>0))return 0;
-  if(pt._far&&!(src==2||src==5||src==6))return 0;
-  if(pt._melee&&!(src==1||src==3||src==4||src==7))return 0;
-  return 1};
-// damage(part) with band; src ids: 0 whip 1 arc 2 arrow 3 shards 4 maul 5 halo 6 prism 7 lance 8 thrown 9 slam
-const damage=(e,pt,dmg,band,src,p,kb)=>{
-  const res=band==pt._b;
-  if(pt._pl&&!(res||src==4)){ev('clank',p,band);return 0}
-  if(pt._pl)dmg=99;
-  if(res){dmg*=3;if(src!=6)addSpec(.34);e._stg=max(e._stg,.4);ev('res',p,band);S._score+=5}
-  pt._hp-=dmg;ev('hit',p,band,src);
-  if(kb&&e._boss<0){const d=norm([e._p[0],0,e._p[2]]);e._kv=mul(d,kb);e._at=0;e._flare=0}
-  if(pt._hp<=0){if(pt._pl)ev('plate',partPos(e,pt),pt._b);
-    if(!e._parts.some(q=>q._hp>0)){if(e._boss>=0){bossPartDead(e)}else killE(e)}
-    else if(e._boss>=0)bossPartDead(e)}
-  return 1};
-// generic hit query: point p with radius r vs all enemy parts; returns [e,pt,partpos] list
-const near=(p,r,src)=>{const out=[];for(const e of S._en)if(alive(e)){let best=0,bd=1e9;for(const pt of e._parts)if(partHit(e,pt,src)){const c=partPos(e,pt),dy=max(0,abs(p[1]-c[1])-(pt._hh||e._hh)),d=hypot(p[0]-c[0],dy,p[2]-c[2])-(pt._r||e._r);if(d<r&&d<bd){bd=d;best=[e,pt,c,d]}}if(best)out.push(best)}return out};
-// melee sweep: sample n points along a-b, band from s, damage with per-enemy cooldown
-const sweep=(a,b,n,dmg,src,cd,bandFn,kb,maxHits)=>{const best=new Map;for(let i=0;i<=n;i++){const s=i/n,p=lerp(a,b,s);for(const[e,pt,c,d]of near(p,.05,src)){const o=best.get(pt);if(!o||d<o[0])best.set(pt,[d,s,e,c,p])}}
-  let hits=0;for(const[pt,[d,s,e,c,p]]of[...best].sort((x,y)=>x[1][1]-y[1][1])){if(pt._cd>0){if(maxHits&&++hits>=maxHits)break;continue}if(damage(e,pt,dmg,bandFn(s,c),src,p,kb)){pt._cd=cd;hits++;if(src==7&&e._t==1)e._stg=.8;if(maxHits&&hits>=maxHits)break}}return hits};
+// ---------- player ----------
+const hurt=n=>{if(S._inv>0||S._ws!=1)return;S._light=max(0,S._light-n);S._inv=1.2;ev('hurt',S._H.p,S._light);if(S._light<=0){S._ws=3;S._wt=3;ev('over')}};
+// ---------- damage ----------
+const damage=(e,n,b,p,f)=>{if(e._st==5)return 0;const res=f||b==e._b&&b<S._light;
+  if(res){n*=3;ev('res',p,b);if(!f&&S._ch<3&&++S._ch==3)ev('ready',p)}else ev('hit',p,b);
+  e._hp-=n;e._fl=.12;if(e._hp<=0)kill(e);return 1};
+const kill=e=>{e._st=5;e._tm=0;e._rear=0;S._kills++;S._score+=e._boss?500:10*(1+e._v);ev('kill',hd(e),e._b,e._v);
+  if(e._boss){S._light=min(7,S._light+2);for(const x of S._en)if(x!=e&&x._st!=5)kill(x);if(e._v==4){S._ws=4;S._wt=6;ev('dawn')}}};
+const near=(p,r)=>{const o=[];for(const e of S._en)if(e._st!=5){const d=edist(e,p);if(d<r)o.push([e,d])}return o.sort((a,b)=>a[1]-b[1])};
+// nearest rope/arch point to an enemy: [index, surface distance]
+const nearest=(e,P,B)=>{let bi=0,bd=1e9;for(let i=0;i<=N;i++){const d=edist(e,B?add(B.p,B.o[i]):P[i]);if(d<bd){bd=d;bi=i}}return[bi,bd]};
+// is the rigid arch between the player and this enemy?
+const blocked=e=>{if(S._md!=1)return 0;const H=hx(),d=norm(sub(H,e._p)),l=dist(H,e._p);return S._rp.some(p=>{const q=sub(p,e._p),a=dot(q,d);return a>0&&a<l-.15&&hypot(q[0]-d[0]*a,q[2]-d[2]*a)<.6&&p[1]>.4&&p[1]<2})};
+const stag=(e,s)=>{e._st=3;e._tm=0;e._sd=s;e._rear=0};
 
 // ---------- rope ----------
 const rope=()=>{
-  const L=S._L.p,R=S._R.p,P=S._rp,Q=S._rq,B=S._bow;
-  if(dist(L,P[0])>.5||dist(R,P[N])>.5)for(let i=0;i<=N;i++){P[i]=lerp(L,R,i/N);Q[i]=[...P[i]]} // hand teleport (controller reconnect): reset rope
-  const d=dist(L,R),ten=S._ten=B?0:clamp((d-.55)/.25,0,1),sl=SEG*(1-.15*ten);
-  const prev=P.map(p=>[...p]);
-  let p0=L,pN=R,k=-1,pk;
-  if(B){const H=B.h,A=B.a;if(H==S._R){p0=L;pN=A}else{p0=A;pN=R}
-    const ax=sub(pN,p0),s=clamp(dot(sub(H.p,p0),ax)/(dot(ax,ax)||1e-9),.05,.95);B.s=s;k=floor(s*N);pk=H.p;B.d=min(.6,dist(H.p,A))}
-  const sdt=DT/3;
-  for(let ss=0;ss<3;ss++){
-    for(let i=1;i<N;i++){const p=P[i],q=Q[i];const v=mul(sub(p,q),.98);Q[i]=[...p];p[0]+=v[0];p[1]+=v[1]-6*sdt*sdt;p[2]+=v[2]}
-    for(let it=0;it<6;it++){
-      P[0]=[...p0];P[N]=[...pN];if(k>0)P[k]=[...pk];
-      for(let i=0;i<N;i++){const a=P[i],b=P[i+1],dv=sub(b,a),l=len(dv)||1e-6,c=mul(dv,(l-sl)/l*.5);
-        if(i>0&&i!=k){a[0]+=c[0];a[1]+=c[1];a[2]+=c[2]}if(i+1<N&&i+1!=k){b[0]-=c[0];b[1]-=c[1];b[2]-=c[2]}}
-      if(ten>0)for(let i=0;i<N-1;i+=2){const a=P[i],b=P[i+2],dv=sub(b,a),l=len(dv)||1e-6,c=mul(dv,(l-2*sl)/l*.5*ten);
-        if(i>0){a[0]+=c[0];a[1]+=c[1];a[2]+=c[2]}if(i+2<N){b[0]-=c[0];b[1]-=c[1];b[2]-=c[2]}}
+  const L=S._L.p,R=S._R.p,P=S._rp,Q=S._rq,md=S._md,prev=P.map(p=>[...p]);
+  if(md==1){const f=fwd(),o=norm([f[0]*.6,1,f[2]*.6]);for(let i=0;i<=N;i++){const s=i/N;P[i]=add(lerp(L,R,s),mul(o,sin(s*PI)*.3));Q[i]=[...P[i]]}}
+  else if(md==3){const B=S._bm;for(let i=0;i<=N;i++){P[i]=add(B.p,B.o[i]);Q[i]=[...P[i]]}}
+  else if(md==4){const m=mid();for(let i=0;i<=N;i++){P[i]=[...m];Q[i]=[...m]}}
+  else{
+    let p0=L,pN=R,pin=1,sl=SEG;
+    if(md==2){const ls=S._ls;p0=ls.h.p;if(ls.e){pN=hd(ls.e);sl=max(SEG,dist(p0,pN)/N)}else if(ls.out){pN=ls.p;sl=max(SEG,dist(p0,pN)/N)}else pin=0}
+    if(dist(p0,P[0])>.5||pin&&dist(pN,P[N])>.5)for(let i=0;i<=N;i++){P[i]=lerp(p0,pin?pN:p0,i/N);Q[i]=[...P[i]];prev[i]=[...P[i]]}
+    const sdt=DT/3;
+    for(let ss=0;ss<3;ss++){
+      for(let i=1;i<=N-pin;i++){const p=P[i],q=Q[i],v=mul(sub(p,q),.985);Q[i]=[...p];p[0]+=v[0];p[1]+=v[1]-7*sdt*sdt;p[2]+=v[2];if(p[1]<.03)p[1]=.03}
+      for(let it=0;it<5;it++){P[0]=[...p0];if(pin)P[N]=[...pN];
+        for(let i=0;i<N;i++){const a=P[i],b=P[i+1],dv=sub(b,a),l=len(dv)||1e-6,c=mul(dv,(l-sl)/l*.5);if(i>0){a[0]+=c[0];a[1]+=c[1];a[2]+=c[2]}if(i+1<N||!pin){b[0]-=c[0];b[1]-=c[1];b[2]-=c[2]}}}
     }
-    P[0]=[...p0];P[N]=[...pN];if(k>0)P[k]=[...pk];
+    P[0]=[...p0];if(pin)P[N]=[...pN];
   }
-  let tip=0,ti=N>>1;
-  for(let i=0;i<=N;i++){const v=S._rv[i]=mul(sub(P[i],prev[i]),1/DT);const s=len(v);if(i>=N/3&&i<=2*N/3&&s>tip){tip=s;ti=i}}
-  S._tip=tip;S._tipI=ti;
+  let tip=0,ti=N>>1;const a=md==2?N-3:N/3,b=md==2?N:2*N/3;
+  for(let i=0;i<=N;i++){const v=S._rv[i]=mul(sub(P[i],prev[i]),1/DT),s=len(v);if(i>=a&&i<=b&&s>tip){tip=s;ti=i}}
+  S._tip=min(tip,60);S._tipI=ti;
 };
 
-// ---------- forge & recogniser ----------
-
-const headSpace=p=>{const y=yaw(),h=S._H.p,d=sub(p,h);return [-cos(y)*d[0]+sin(y)*d[2],d[1],sin(y)*d[0]+cos(y)*d[2]]};
-const forgeStep=()=>{
-  const G=S._fg,L=S._L,R=S._R;
-  if(G.cd>0)G.cd-=DT;
-  const busy=S._halo.out||S._sh[0]||S._sh[1]||S._bow;
-  let want,rel;
-  if(S._ht){const close=dist(L.p,R.p)<.3;G.pin=L.t&&R.t&&close?G.pin+DT:0;want=G.pin>=.4;rel=!(L.t&&R.t)}
-  else{want=L.g&&R.g;rel=!(L.g&&R.g)}
-  if(!G.on){if(want&&G.cd<=0&&!busy&&S._ws!=0){G.on=1;G.t=0;G.M=[];G.D=[];G.pin=0;S._halo.out=0;S._sh=[0,0];ev('forge',lerp(L.p,R.p,.5),0,S._wp);S._wp=0}return}
-  G.t+=DT;
-  if(rel||G.t>=2.5){G.on=0;G.cd=1;G.pin=0;const w=recognise(G.M,G.D);S._wp=w;S._halo.out=0;S._halo.id++;S._sh=[0,0];S._beam=0;S._lt=[0,0,0];
-    ev(w?'forged':'unforge',lerp(L.p,R.p,.5),0,w);return}
-  G.M.push(headSpace(lerp(L.p,R.p,.5)));G.D.push(sub(headSpace(R.p),headSpace(L.p))); // the release frame itself is not sampled
+// ---------- modes: arch / throw / lasso / nova ----------
+const endLasso=()=>{S._ls=0;S._md=S._L.t&&S._R.t?1:0;resetRope()};
+const nova=()=>{S._ch=0;S._md=4;S._nv=.6;const m=mid();ev('nova',m);for(const e of S._en)if(e._st!=5&&dist(e._p,hx())<6.5){damage(e,6,e._b,hd(e),1);if(e._st!=5&&!e._boss)stag(e,1.5)}};
+const modes=()=>{
+  const L=S._L,R=S._R,md=S._md,both=L.t&&R.t;
+  for(const h of[L,R])h.ht=h.t?h.ht+DT:0;
+  if(md==3)return;
+  if(md==4){if(S._nv<=0&&dist(L.p,R.p)>.3){S._md=0;resetRope()}return}
+  if(md==2){const ls=S._ls;ls.t+=DT;
+    if(ls.e){const e=ls.e,v=ls.h.v,aw=sub(ls.h.p,e._p);
+      if(e._st!=4){endLasso();return}
+      if(len(v)>=3.5&&dot(v,aw)>0){ev('yank',hd(e),ls.b);e._st=3;e._sd=1;e._tm=0;damage(e,e._boss?8:5,ls.b,hd(e));endLasso();return}
+      if(ls.t>4||both){stag(e,1);endLasso();return}
+      const d=dist(e._p,hx());if(d>1.6&&!e._boss)e._p=add(e._p,mul(norm(sub(hx(),e._p)),.5*DT));
+      return}
+    if(ls.out){ls.v[1]-=8*DT;const n=near(ls.p,3)[0];if(n)ls.v=lerp(ls.v,mul(norm(sub(hd(n[0]),ls.p)),len(ls.v)),.12); // aim assist
+      ls.p=add(ls.p,mul(ls.v,DT));if(ls.p[1]<.1)ls.p[1]=.1;if(n&&!(n[0]._boss&&n[0]._st==9)){const e=n[0];e._st=4;e._tm=0;e._rear=0;ls.e=e;ls.t=0;ev('caught',hd(e),e._b);return}
+      if(ls.t>1.3||len(ls.p)>14)endLasso();return}
+    if(!ls.h.t){if(S._tip>=3){ls.out=1;ls.t=0;ls.p=[...S._rp[N]];ls.v=mul(norm(S._rv[N]),min(13,S._tip*1.3));ev('lasso',ls.p,ls.b)}else endLasso();return}
+    if(both)endLasso();return}
+  if(md==1){
+    if(!both){const v=lerp(L.v,R.v,.5),sp=len(v);
+      if(sp>=2.5&&sp<20){const m=mid();S._md=3;S._bm={p:m,o:S._rp.map(p=>sub(p,m)),d:norm(v),t:0,hit:new Set,ret:0,h:L.t?L:R};ev('throw',m,0,sp)}
+      else S._md=0}
+    else{const d=dist(L.p,R.p),cl=(S._pd-d)/DT;S._pd=d;if(S._ch>=3&&d<.15&&cl>=2)nova()}
+    return}
+  if(both){S._md=1;S._pd=dist(L.p,R.p);ev('arc',mid())}
+  else{const h=L.t?L:R.t?R:0;if(h&&h.ht>=.25){S._md=2;S._ls={h,b:h==L?6:0,out:0,e:0,t:0};ev('rope',h.p,h==L?6:0)}}
+};
+const boom=()=>{const B=S._bm;if(!B)return;B.t+=DT;
+  if(!B.ret){B.p=add(B.p,mul(B.d,11*DT));if(B.t>.75||dist(B.p,S._H.p)>9){B.ret=1;B.hit.clear();ev('turn',B.p)}}
+  else{const h=B.h.p,d=sub(h,B.p),l=len(d);if(l<.4){S._md=S._L.t&&S._R.t?1:0;S._bm=0;ev('catch',h);resetRope();return}B.p=add(B.p,mul(d,min(1,13*DT/l)))}
+  for(const e of S._en){if(e._st==5||B.hit.has(e))continue;const[i,d]=nearest(e,0,B);if(d<.15){B.hit.add(e);damage(e,2,band(i/N),add(B.p,B.o[i]))}}
+};
+const strikes=()=>{const md=S._md,P=S._rp;if(S._crk>0)S._crk-=DT;
+  if(md==0&&S._tip>=6&&S._crk<=0){const i=S._tipI,p=P[i];S._crk=.25;ev('crack',p,band(i/N));for(const[e]of near(p,.4))damage(e,1,band(i/N),p)}
+  if(md==1&&(len(S._L.v)>=3.5||len(S._R.v)>=3.5))for(const e of S._en){if(e._st==5||e._cd>0)continue;const[i,d]=nearest(e,P);if(d<.1){e._cd=.3;damage(e,2,band(i/N),P[i])}}
 };
 
-// ---------- weapons ----------
-const trigEdge=h=>h.t&&!h.pt;
-const weapons=w=>{
-  const L=S._L,R=S._R,P=S._rp,wp=S._wp,mid=lerp(L.p,R.p,.5);
-  if(S._crk>0)S._crk-=w;if(S._slam>0)S._slam-=w;
-  for(const e of S._en)for(const pt of e._parts)if(pt._cd>0)pt._cd-=w;
-  if(S._fg.on)return;
-  if(wp==0){
-    // bow
-    for(const H of[L,R]){
-      if(trigEdge(H)&&!S._bow&&S._ten>=.7){S._bow={h:H,a:[...H.p],s:.5,d:0};ev('draw',H.p)}
-      if(!H.t&&H.pt&&S._bow&&S._bow.h==H){const B=S._bow,dd=dist(H.p,B.a);
-          if(dd>=.15){const D=min(.6,dd),dir=norm(sub(B.a,H.p)),s=B.s;S._ar.push({p:[...B.a],v:mul(dir,12+20*D/.6),d:2+4*D/.6,b:bandOf(s),hit:new Set});ev('arrow',B.a,bandOf(s),D)}
-          S._bow=0}}
-    // whip crack
-    if(S._ten<.3&&S._tip>=6&&S._crk<=0&&!S._bow){const i=S._tipI,p=P[i];S._crk=.25;ev('crack',p,bandOf(i/N));
-      for(const[e,pt]of near(p,.35,0))damage(e,pt,2,bandOf(i/N),0,p,4)}
-    // arc strike
-    if(S._ten>=.7&&S._rv.some(v=>len(v)>=3.5))sweep(P[0],P[N],N,3,1,.3,s=>bandOf(s),0,0);
-  }else if(wp==1){ // lance
-    const dir=norm(sub(R.p,L.p)),tip=add(L.p,mul(dir,2.2)),tv=mul(sub(tip,S._lt),1/DT);S._lt=tip;
-    const sp=len(tv),th=dot(tv,dir);
-    if((sp>=3||th>=2.5)&&sp<40)sweep(L.p,tip,22,4,7,.6,s=>bandOf(s),0,3);
-  }else if(wp==2){ // halo
-    const H=S._halo;
-    if(!H.out&&trigEdge(R)){const sp=len(R.v);H.out=1;H.id++;H.t=0;H.p=[...R.p];H.v=mul(sp>.5?norm(R.v):fwdOf(R),max(8,sp));H.b=bandOf((S._t/1.5)%1);ev('throw',R.p,H.b,2)}
-    if(H.out){H.t+=w;if(H.t<1.2&&len(H.p)<12){H.p=add(H.p,mul(H.v,w));
-        for(const[e,pt]of near(H.p,.35,5))if(pt._hid!=H.id){pt._hid=H.id;damage(e,pt,3,H.b,5,H.p,0)}}
-      else{H.t=max(H.t,1.2);const d=sub(R.p,H.p),l=len(d);if(l<.3){H.out=0;ev('catch',R.p,H.b,2)}else H.p=add(H.p,mul(d,min(1,12*w/l)))}}
-  }else if(wp==3){ // maul
-    const dir=norm(sub(R.p,L.p)),hp=add(R.p,mul(dir,.2)),hv=mul(sub(hp,S._mh),1/DT);S._mh=hp;const sp=len(hv);S._mb=bandOf((S._t/2)%1);
-    if(sp>=3&&sp<40){for(const[e,pt]of near(hp,.3,4))if(!(pt._cd>0)&&damage(e,pt,6,S._mb,4,hp,6))pt._cd=.5;
-      if(hp[1]<.15&&sp>=4&&S._spec>=1&&S._slam<=0){S._spec--;S._slam=.5;ev('slam',hp,S._mb);
-        for(const e of S._en)if(alive(e)&&e._t!=0&&hd(e._p,hp)<4){const pt=e._parts.find(q=>q._hp>0&&partHit(e,q,9));if(e._boss>=0){e._stg=1;e._atk=0;ev('stagger',e._p);addSpec(1)}else if(pt)damage(e,pt,4,S._mb,9,e._p,3)}}}
-  }else if(wp==4){ // shards
-    [L,R].forEach((H,i)=>{const f=fwdOf(H),T=S._sh[i];
-      if(T){T.t+=w;if(T.t<.8&&!T.back){T.p=add(T.p,mul(T.v,w));for(const[e,pt]of near(T.p,.2,3))if(pt._hid!=T.id){pt._hid=T.id;damage(e,pt,3,T.b,3,T.p,0);T.back=1}}
-        else{const d=sub(H.p,T.p),l=len(d);if(l<.3)S._sh[i]=0;else T.p=add(T.p,mul(d,min(1,10*w/l)))}return}
-      const bf=s=>bandOf(i?.5+s*.5:s*.5);
-      if(trigEdge(H)){S._sh[i]={p:[...H.p],v:mul(f,10),t:0,id:++S._halo.id,b:bf(.5),back:0};ev('throw',H.p,bf(.5),4);return}
-      if(len(H.v)>=2.5)sweep(H.p,add(H.p,mul(f,.45)),5,2,3,.15,bf,0,0)});
-  }else if(wp==5){ // prism
-    const f=norm(add(fwdOf(L),fwdOf(R))),fr=fwdOf(R),u=qrot(R.q,[0,1,0]);let rr=cross(fr,[0,1,0]);rr=len(rr)<1e-3?[1,0,0]:norm(rr);const roll=atan2(dot(u,rr),dot(u,cross(rr,fr))),b=min(6,floor(((roll+PI)/(2*PI))*7));S._pb=b;
-    if(R.t||L.t){const a=mid,e2=add(a,mul(f,12)),pw=S._spec>0;S._beam=[a,e2,b];if(pw)S._spec=max(0,S._spec-w);
-      for(const e of S._en)if(alive(e))for(const pt of e._parts)if(partHit(e,pt,6)){const c=partPos(e,pt);if(segd(c,a,e2)[0]<.4+(pt._r||e._r)){if(!(pt._cd>0)){pt._cd=.2;damage(e,pt,(pw?5:1)*.2,b,6,c,0)}}}}
-    else S._beam=0;
+// ---------- enemies ----------
+const spawn=(v,b,r)=>{const T=VT[v],e={_v:v,_p:bpos(b,r),_yaw:0,_hp:T[0],_b:floor(rnd()*7),_st:v>2?7:0,_tm:0,_ph:rnd()*6.28,_gal:0,_rear:0,_sc:T[2],_boss:v>2,_cnt:0,_cd:0,_sd:0,_fl:0,_dir:[0,0,1],_cue:0,_hitp:0};S._en.push(e);ev('spawn',e._p,e._b,v);return e};
+const summon=e=>{for(let i=0;i<(e._v==4?3:2);i++)spawn(0,atan2(e._p[0],e._p[2])+(i-1)*.5,dist(e._p,hx())+1)};
+const boss=(e,w,dl,dir)=>{const st=e._st,T=VT[e._v],H=hx();
+  if(e._v==4)e._b=floor(S._t/2)%7;
+  if(st==7){const a=atan2(e._p[0]-H[0],e._p[2]-H[2])+w*.35,r=dl+(7-dl)*min(1,w*.6);e._p=[H[0]+sin(a)*r,0,H[2]+cos(a)*r];e._yaw=a+PI/2;e._gal=.7;if(dl>8)e._tm=0;
+    if(e._tm>(e._v==4?3:4)){e._cnt++;e._tm=0;e._yaw=atan2(dir[0],dir[2]);
+      if(e._cnt%3==0){e._st=10;e._cue=[...H];ev('cue',H,e._b,.9)}
+      else{e._st=8;ev('charge',hd(e),e._b);if(e._cnt%2==1&&S._en.length<9)summon(e)}}}
+  else if(st==8){e._yaw=atan2(dir[0],dir[2]);e._rear=min(1,e._tm*1.5);if(e._tm>=T[4]){e._st=9;e._tm=0;e._rear=0;e._dir=dir;e._hitp=0}}
+  else if(st==9){e._p=add(e._p,mul(e._dir,8*w));e._gal=1;
+    if(!e._hitp&&dot(sub(H,e._p),e._dir)<.9*e._sc){e._hitp=1;if(blocked(e)){stag(e,3.5);ev('stagger',hd(e),e._b)}else{hurt(T[3]);ev('gore',hd(e),e._b)}}
+    if(e._tm>2.2){e._st=7;e._tm=0}}
+  else if(st==10){e._rear=min(1,e._tm*2);if(e._tm>=.9){e._st=7;e._tm=0;e._rear=0;if(dist(H,e._cue)<.7)hurt(1);ev('strike',e._cue,e._b)}}
+};
+const enemies=w=>{const H=hx();
+  for(const e of S._en){const T=VT[e._v],st=e._st;e._tm+=w;if(e._cd>0)e._cd-=w;if(e._fl>0)e._fl-=w;
+    const d=sub(H,e._p),dl=len(d),dir=norm(d);e._gal=0;
+    if(st==5){if(e._tm>.35)e._hp=-1e9;continue}
+    if(st==3){if(e._tm>e._sd)e._st=e._boss?7:0;continue}
+    if(st==4){e._rear=.3+.2*sin(e._tm*20);continue}
+    if(e._boss){boss(e,w,dl,dir);continue}
+    if(st==0){e._yaw=atan2(dir[0],dir[2]);const sp=T[1];
+      if(e._v==1){if(dl<.8){if(blocked(e)){stag(e,2);ev('block',hd(e),e._b)}else{hurt(1);ev('gore',hd(e),e._b);e._st=6;e._tm=0;e._dir=dir}}
+        else{e._p=add(e._p,mul(dir,sp*w));e._gal=1;if(!e._cue&&dl<9){e._cue=1;ev('charge',hd(e),e._b)}}}
+      else if(dl<=1.4){e._st=1;e._tm=0;ev('rear',hd(e),e._b)}
+      else{e._p=add(e._p,add(mul(dir,sp*w),mul([dir[2],0,-dir[0]],cos(S._t*2.5+e._ph)*.9*w)));e._gal=1}}
+    else if(st==1){e._yaw=atan2(dir[0],dir[2]);e._rear=min(1,e._tm/T[4]*1.4);
+      if(e._tm>=T[4]){e._rear=0;if(blocked(e)){stag(e,e._v==2?1:1.5);ev('block',hd(e),e._b)}else{hurt(T[3]);ev('gore',hd(e),e._b);e._st=2;e._tm=0}}}
+    else if(st==2){e._p=add(e._p,mul(dir,-T[1]*.8*w));e._gal=.6;if(e._tm>1.3)e._st=0}
+    else if(st==6){e._p=add(e._p,mul(e._dir,7*w));e._gal=1;if(e._tm>2){e._p=bpos(S._front+S._spread*(rnd()*2-1),14);e._st=0;e._cue=0}}
   }
-};
-
-// ---------- projectiles ----------
-const projectiles=w=>{
-  const P=S._rp,L=S._L.p,R=S._R.p;
-  S._pr=S._pr.filter(o=>{o.p=add(o.p,mul(o.v,w));
-    if(o.p[1]<0||len(o.p)>25)return 0;
-    if(S._wp==0&&S._ten>=.7&&!S._bow){let bi=-1,bd=.2;for(let i=0;i<=N;i++){const d=dist(P[i],o.p);if(d<bd){bd=d;bi=i}}if(bi>=0){if(bandOf(bi/N)==o.b){addSpec(1);ev('absorb',o.p,o.b)}else ev('block',o.p,o.b);return 0}}
-    if(S._wp==1&&segd(o.p,L,add(L,mul(norm(sub(R,L)),2.2)))[0]<.2){ev('block',o.p,o.b);return 0}
-    const oh=dist(o.p,S._H.p)<.3?1:dist(o.p,L)<.2||dist(o.p,R)<.2?2:dist(o.p,UNI)<.9?3:0;if(oh){hurt(1);ev('orbhit',o.p,o.b,oh);return 0}
-    return 1});
-  S._ar=S._ar.filter(a=>{a.p=add(a.p,mul(a.v,w));if(len(a.p)>40||a.p[1]<0)return 0;
-    for(const[e,pt]of near(a.p,.1,2))if(!a.hit.has(e)){a.hit.add(e);damage(e,pt,a.d,a.b,2,a.p,0);if(e._t!=0&&e._t!=4)return 0}
-    return 1});
-};
-
-// ---------- enemy behaviour ----------
-const enemies=w=>{
-  const H=S._H.p,hx=[H[0],0,H[2]];
-  for(const e of S._en){
-    if(!alive(e))continue;
-    if(e._boss>=0){boss(e,w);continue}
-    if(e._stg>0){e._stg-=w;continue}
-    if(len(e._kv)>.1){e._p=add(e._p,mul(e._kv,w));e._kv=mul(e._kv,1-6*w);e._p[1]=ET[e._t][4]}
-    const T=ET[e._t],sp=e._spd,t=e._t;
-    const tgt=t==4?hx:t==2?[0,e._p[1],0]:[0,e._p[1],-1.8];
-    const d=sub(tgt,e._p),dl=hd(tgt,e._p),dir=norm([d[0],0,d[2]]);
-    const walk=()=>{e._p=add(e._p,mul(dir,sp*w))};
-    // player-blocking: ground enemies stop near the player and attack them instead
-    if((t==1||t==3)&&hd(e._p,hx)<1&&e._st<2){e._flare+=w;if(e._flare>=2){e._flare=0;
-        let blocked=S._ten>=.7&&S._wp==0&&S._rp.some(p=>dist(p,e._p)<.7)||S._wp==1;
-        if(blocked)ev('block',e._p,e._b);else hurt(1);ev('swing',e._p,e._b)}
-      else if(e._flare>1.5&&!e._fl){e._fl=1;ev('flare',e._p,e._b)}continue}
-    e._fl=0;
-    if(t==0){ // wisp
-      if(e._st==0){if(dl<2){e._st=1;e._at=0;e._ph=atan2(e._p[0],e._p[2]+1.8)}else{e._ph+=w*4;const side=cross(dir,[0,1,0]);e._p=add(e._p,add(mul(dir,sp*w),mul(side,cos(e._ph)*3.2*w)))}}
-      else{e._at+=w;e._ph+=sp/1.5*w;e._p=[sin(e._ph)*1.5,1.5,-1.8+cos(e._ph)*1.5];if(e._at>=2){hurt(1);ev('dive',e._p,e._b);killE(e)}}
-    }else if(t==1){ // husk
-      if(dl>1.5)walk();else{e._at+=w;if(e._at>=2){e._at=0;hurt(1);ev('swing',e._p,e._b)}else if(e._at>1.5&&!e._fl2){e._fl2=1;ev('flare',e._p,e._b)}if(e._at<1.5)e._fl2=0}
-    }else if(t==2){ // spitter
-      if(dl>5)walk();e._at+=w;if(e._at>=3.5){e._at=0;e._alt=!e._alt;const to=e._alt?UNI:S._H.p,v=norm(sub(to,e._p));S._pr.push({p:add(e._p,mul(v,.7)),v:mul(v,6),b:e._b});ev('spit',e._p,e._b)}
-    }else if(t==3){ // shell
-      if(dl>1.2)walk();else{if(!e._at)ev('flare',e._p,e._b);e._at+=w;if(e._at>=2.5){hurt(2);ev('dive',e._p,e._b);killE(e)}}
-    }else{ // swarm
-      if(e._st==0){if(dl<2.2){e._st=1;e._at=0}else walk()}
-      else if(e._st==1){e._at+=w;e._ph+=w*1.2;e._p=[H[0]+sin(e._ph)*2,1.4,H[2]+cos(e._ph)*2];if(e._at>=6)e._st=2}
-      else{const u=[0,1.4,-1.8],dd=sub(u,e._p),l=hd(u,e._p);if(l>.5)e._p=add(e._p,mul(norm([dd[0],0,dd[2]]),sp*w));else{hurt(1);ev('dive',e._p,e._b);killE(e)}}
-    }
-  }
-};
-
-// ---------- bosses ----------
-const bossPartDead=e=>{
-  if(e._boss==2){if(e._ph==1&&!e._parts.some(p=>p._hp>0)){e._ph=3;e._p=[0,2,0];e._parts=[{_o:[0,0,0],_hp:220,_b:0,_r:.6}];e._tm=[3,0];e._inv=0;ev('phase',e._p,0,3)}else if(e._ph==3&&!e._parts.some(p=>p._hp>0))killE(e)} //@eclipse
-  if(e._boss==1){
-    if(!e._parts.some(p=>p._hp>0))killE(e);
-    else if(!e._parts.some(p=>p._pl&&p._hp>0)&&e._ph==1){e._ph=2;e._tm=[5,3];e._atk=0;e._p=mul(e._fw,-2.2);e._parts[6]._b=2+floor(rnd()*5);ev('phase',e._p,0,2)}
-  }else if(!e._parts.some(p=>p._hp>0))killE(e);
-};
-const spawnBoss=id=>{
-  const by=yaw(),fw=bpos(by,-1,0),rt=cross([0,1,0],fw);S._front=by; // fw = direction from boss toward centre
-  const e={_boss:id,_by:by,_fw:fw,_rt:rt,_hp:1,_r:.5,_hh:0,_b:floor(rnd()*7),_stg:0,_parts:[],_atk:0,_ph:1,_open:0,_inv:0,_spawned:0};
-  if(id==0){e._p=add(mul(fw,-6),[0,7,0]);e._parts=[{_o:[0,0,0],_hp:400,_b:e._b,_far:1,_r:.8}];e._tm=[3,8,6]}
-  if(id==1){e._p=mul(fw,-3);e._parts=[[-.4,2.2,0],[.4,2.2,0],[-.9,2.8,0],[.9,2.8,0],[-1.2,1.4,0],[1.2,1.4,0]].map(o=>({_o:o,_hp:8,_b:floor(rnd()*7),_pl:1,_r:.35}));e._parts.push({_o:[0,1.5,0],_hp:650,_b:e._b,_core:1,_melee:1,_r:.5});e._tm=[5,4]}
-  if(id==2){e._p=add(mul(fw,-6),[0,6,0]);e._parts=[{_o:[0,0,0],_hp:130,_b:e._b,_far:1,_r:.9}];e._inv=1;e._tm=[0,0];S._dark=1} //@eclipse
-  S._en.push(e);ev('boss',e._p,e._b,id);return e};
-const strike=(e,k,r,t)=>{e._atk={k,r,t:t||.8,p:[S._H.p[0],0,S._H.p[2]]};ev('cue',e._atk.p,k,e._atk.t)};
-const resolveAtk=(e,w)=>{const A=e._atk;if(!A)return;A.t-=w;if(A.t>0)return;e._atk=0;const H=S._H.p;
-  if(A.k==0){if(hd(H,A.p)<A.r+.18)hurt(1);ev('strike',A.p,0,A.k)} // column / slam / tentacle
-  else if(A.k==1){if(H[1]>A.r-.2)hurt(1);ev('sweep',[0,A.r,0],0,1)} // horizontal sweep at height r
-  else if(A.k==2){hurt(1);ev('lunge',e._p)} // lunge landed
-  else if(A.k==3){const U=[0,1,-1.8];let sh=0;if(S._wp==0&&S._ten>=.7)sh=S._rp.some(p=>dist(p,U)<1);if(S._wp==1){const L=S._L.p,d=norm(sub(S._R.p,L));sh=segd(U,L,add(L,mul(d,2.2)))[0]<1}if(!sh)hurt(1);ev('pulse',U,0,sh)} //@eclipse light-eater pulse: taut arc or lance across the unicorn
-};
-const boss=(e,w)=>{
-  const T=e._tm;if(e._stg>0){e._stg-=w;return}
-  resolveAtk(e,w);
-  if(e._boss==0){const p2=e._parts[0]._hp<150;
-    T[0]-=w;T[1]-=w;T[2]-=w;
-    if(T[0]<=0&&!e._atk){T[0]=p2?2:3;strike(e,0,.5)}
-    if(T[1]<=0&&!e._atk){T[1]=p2?5:8;e._atk={k:1,r:1.4,t:1.3};ev('cue',[0,1.4,0],1,1.3)}
-    if(T[2]<=0){T[2]=6;e._open=p2?1.8:2.5;e._parts[0]._b=floor(rnd()*7);ev('eye',e._p,e._parts[0]._b,1)}
-    if(e._open>0){e._open-=w;e._inv=0;if(e._open<=0)ev('eye',e._p,0,0)}else e._inv=1;
-  }else if(e._boss==1){
-    T[0]-=w;T[1]-=w;
-    if(e._ph==1){
-      if(T[0]<=0&&!e._atk){T[0]=5;e._atk={k:1,r:1.3,t:1.15};ev('cue',[0,1.3,0],1,1.15)}
-      if(T[1]<=0&&!e._atk){T[1]=4;strike(e,0,.3)}
-    }else{
-      if(T[0]<=0&&!e._atk){T[0]=5;e._atk={k:1,r:1.3,t:1.15};ev('cue',[0,1.3,0],1,1.15)}
-      if(T[1]<=0&&!e._atk){T[1]=3;e._atk={k:2,t:.5};e._lhp=e._parts[6]._hp;e._parts[6]._cd=0;ev('cue',e._p,2,.5)}
-      if(e._atk&&e._atk.k==2&&e._parts[6]._hp<e._lhp){e._atk=0;e._stg=1;addSpec(1);ev('stagger',e._p)}
-    }
-  }
-  if(e._boss==2){if(e._ph==1){T[0]-=w;if(e._open>0){e._open-=w;e._inv=0;if(e._open<=0){e._inv=1;e._spawned=0;T[0]=0;ev('eye',e._p,0,0)}}else{e._inv=1;if(e._spawned<4&&T[0]<=0){T[0]=4;const b=e._by+(rnd()-.5)*3;const s=spawn(e._spawned%2?2:4,b,8);s._sum=1;e._spawned++}const sw=S._en.filter(x=>x._sum&&x._t==4);if(e._spawned>=3&&sw.every(x=>!alive(x))){e._open=4;e._parts[0]._b=floor(rnd()*7);ev('eye',e._p,e._parts[0]._b,1)}}}else{T[0]-=w;e._parts[0]._b=floor((S._t/2)%7);if(T[0]<=0&&!e._atk){T[0]=3;e._atk={k:3,t:.8};ev('cue',[0,1,-1.8],3,.8)}}} //@eclipse
+  S._en=S._en.filter(e=>e._hp>-1e8);
 };
 
 // ---------- waves ----------
-const beginWave=n=>{
-  S._wave=n;S._ws=1;S._wtime=0;S._front=yaw();S._q=[];
-  const d=WAVES[n-1];ev('wave',0,0,n);
-  if(d.length==1){spawnBoss(d[0]);return}
-  const cnt=[];for(let i=2;i<d.length;i+=2)cnt.push([d[i],d[i+1]]);
-  for(let more=1;more;){more=0;for(const c of cnt)if(c[1]-->0){S._q.push(c[0]);more=1}}
-  S._iv=d[0];S._spread=d[1]*PI/180;S._st=d[0];
-};
-const waves=w=>{
-  const trig=trigEdge(S._L)||trigEdge(S._R);
-  if(S._ws==0){if(trig){S._ws=2;S._wt=1;S._wave=0;ev('start')}return}
+const beginWave=n=>{S._wave=n;S._ws=1;S._wtime=0;S._front=yawOf(S._H.q);S._q=[];const d=WAVES[n-1];ev('wave',0,0,n);S._spread=(d[1]||180)*PI/180;
+  if(d.length==1){const e=spawn(d[0],S._front,15);ev('boss',e._p,e._b,d[0]);return}
+  const c=[d[2],d[3],d[4]];for(let more=1;more;){more=0;for(let v=0;v<3;v++)if(c[v]-->0){S._q.push(v);more=1}}
+  S._iv=d[0];S._st=1};
+const trigEdge=h=>h.t&&!h.pt;
+const waves=w=>{const trig=trigEdge(S._L)||trigEdge(S._R);
+  if(S._ws==0){if(trig){S._ws=2;S._wt=1.5;S._wave=0;ev('start')}return}
   if(S._ws==2){S._wt-=w;if(S._wt<=0)beginWave(S._wave+1);return}
-  if(S._ws==3){S._wt-=w;if(S._wt<=0&&trig){S._init();S._ws=2;S._wt=1;ev('restart')}return}
-  if(S._ws==4){S._en=[];S._pr=[];S._ar=[];S._wt-=w;if(S._wt<=0&&trig){S._init();S._ws=2;S._wt=1;ev('restart')}return}
+  if(S._ws>=3){S._wt-=w;if(S._ws==4)S._dawn=min(1,S._dawn+w/8);if(S._wt<=0&&trig){S._init();S._ws=2;S._wt=1.5;ev('restart')}return}
   S._wtime+=w;
-  if(S._q.length){S._st-=w;if(S._st<=0){S._st=S._iv;spawn(S._q.shift(),S._front+S._spread*(rnd()*2-1))}}
-  else if(!S._en.some(alive)){S._log.push([S._wave,S._wtime]);S._score+=100*S._wave;S._ws=2;S._wt=3;S._en=[];S._pr=[];S._ar=[];S._dark=0;ev('clear',0,0,S._wave)}
+  if(S._q.length){S._st-=w;if(S._st<=0){S._st=S._iv;const v=S._q.shift();spawn(v,S._front+S._spread*(rnd()*2-1),v==1?14:9+rnd()*3)}}
+  else if(!S._en.some(e=>e._st!=5)){S._log.push([S._wave,S._wtime]);S._score+=100*S._wave;S._ws=2;S._wt=3;ev('clear',0,0,S._wave)}
 };
 
 // ---------- public API ----------
 const cp=(a,b)=>{for(const k in b)if(b[k]!=null)a[k]=b[k]};
 S.inject=(L,R,H)=>{L&&cp(S._L,L);R&&cp(S._R,R);H&&cp(S._H,H)}; // {p,q,t,g}, {p,q}; arrays are never mutated by the sim
 S.step=n=>{for(let i=0;i<(n||1);i++){
-  S._t+=DT;const w=S._fg.on?DT*.15:DT;
-  for(const h of[S._L,S._R]){h.v=lerp(h.v,mul(sub(h.p,h.pp),1/DT),.5);h.pp=[...h.p]}
+  S._t+=DT;if(S._nv>0)S._nv-=DT;const w=S._nv>0?DT*.15:DT;
+  for(const h of[S._L,S._R]){h.t=h.t||h.g?1:0;h.v=lerp(h.v,mul(sub(h.p,h.pp),1/DT),.5);h.pp=[...h.p]}
   if(S._inv>0)S._inv-=w;
-  rope();forgeStep();weapons(w);projectiles(w);enemies(w);waves(w);
-  S._en=S._en.filter(alive);
+  S._bolt-=DT;if(S._bolt<=0){S._bolt=6+rnd()*9;const a=rnd()*6.28;ev('bolt',[sin(a)*32,0,cos(a)*32],floor(rnd()*7))}
+  rope();modes();strikes();boom();enemies(w);waves(w);
   S._L.pt=S._L.t;S._R.pt=S._R.t;
 }};
 S.hashState=()=>{let h=2166136261;const f=x=>{h=Math.imul(h^(x*1000|0),16777619)}; //@test
-  f(S._light);f(S._spec*100);f(S._score);f(S._wave);f(S._ws);f(S._wp);f(S._t);f(S._ten); //@test
+  f(S._light);f(S._ch);f(S._score);f(S._wave);f(S._ws);f(S._md);f(S._t);f(S._tip); //@test
   for(const p of S._rp){f(p[0]);f(p[1]);f(p[2])} //@test
-  for(const e of S._en){f(e._p[0]);f(e._p[2]);for(const p of e._parts)f(p._hp)} //@test
-  for(const o of S._pr){f(o.p[0]);f(o.p[2])}for(const a of S._ar){f(a.p[0]);f(a.p[2])} //@test
+  for(const e of S._en){f(e._p[0]);f(e._p[2]);f(e._hp);f(e._st)} //@test
   return h>>>0}; //@test
 S.drain=()=>{const e=S._ev;S._ev=[];return e};
-S._spawn=spawn;S._spawnBoss=spawnBoss; //@test
+S._spawn=spawn; //@test
 return S;
 }

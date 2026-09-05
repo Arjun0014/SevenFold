@@ -9,9 +9,9 @@ import {execSync} from 'node:child_process';
 
 const argv=process.argv.slice(2),opt=(k,d)=>{const i=argv.indexOf(k);return i<0?d:argv[i+1]};
 const LEVEL=+opt('--level',1),ROLL=!argv.includes('--no-roll'),ITER=+opt('--iter',60),LIMIT=13312,TARGET=12900;
-// optional features, lines tagged //@name: audio + particles are on by default (--no-audio / --no-particles); the Eclipse boss (waves 9–12) is opt-in (--eclipse) — see DECISIONS.md
-const OPT=['audio','particles'].filter(f=>!argv.includes('--no-'+f)).concat(argv.includes('--eclipse')?['eclipse']:[]);
-const ORDER=['vec','sim','input','xr','audio','render','main'].filter(m=>existsSync(`src/${m}.js`)&&(m!='audio'||OPT.includes('audio')));
+// lines tagged //@test are test hooks stripped from the build
+const OPT=[];
+const ORDER=['vec','sim','input','xr','audio','render','main'];
 mkdirSync('dist',{recursive:true});
 
 // 1. concat, strip import/export
@@ -35,7 +35,7 @@ if(ROLL){const packer=new Packer([{data:min,type:'js',action:'eval'}],{});await 
 writeFileSync('dist/bundle.rolled.js',rolled);
 
 // 4. inline
-const css='body{margin:0;background:#0b0f1e;color:#dfe6ff;font:13px sans-serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 28px sans-serif;padding:18px 40px;background:#12141c;color:#fff;border:2px solid #6a5cff}#h{position:fixed;left:8px;bottom:8px;opacity:.6}#u{position:fixed;top:40%;width:100%;text-align:center;font-size:20px}';
+const css='body{margin:0;background:#0c1018;color:#cfc8e8;font:13px serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:64%;transform:translate(-50%,-50%);font:bold 26px serif;letter-spacing:4px;padding:18px 44px;background:#0c1018;color:#e8e2ff;border:1px solid #8a6cff;cursor:pointer}#h{position:fixed;left:8px;bottom:8px;opacity:.5}#u{position:fixed;top:40%;width:100%;text-align:center;font-size:20px}';
 const html=`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Sevenfold</title><style>${css}</style><div id=u></div><script>U="https://play.js13kgames.com/2026/webxr/three.js";${rolled}</script>`;
 writeFileSync('dist/index.html',html);
 const urls=html.match(/https?:\/\/[^"' ]*/g)||[];

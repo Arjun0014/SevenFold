@@ -1,124 +1,83 @@
 # SEVENFOLD
 
-A standing-play WebXR arena-survival game for **js13kGames 2026, WebXR category**
-(theme: *Unicorns and Rainbows*). Everything fits in a 13,312-byte zip; the only
-external file is the Three.js core module hosted by js13kGames.
+A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
+Rainbows*), category **WebXR**. One `index.html`, 13,222 bytes zipped, plus the
+competition's hosted Three.js.
 
-The Umbra ate the sky. The last unicorn stands behind you on a drowned altar, and
-its horn holds the last rainbow. You hold the rainbow's two ends. Until dawn,
-everything that hunts light comes across the cloud-sea, and you turn the rainbow
-into whatever the night requires.
+You are a mage holding the last rainbow. The Umbra took the colour out of the
+unicorns' world and sends its hollow herd against you: ash-black unicorns, each
+with one burning horn in one of seven colours. Hold both triggers and the rainbow
+stiffens into an arch that blocks. Swing and let go and it flies as a boomerang
+that returns. Hold one trigger and it becomes a lasso: catch, then pull. Match a
+horn's colour to shatter it; three matches charge a Nova. Seven colours are your
+seven lives. Survive ten waves and two giants until dawn. Every unicorn sings its
+colour from where it stands — the horde is the music.
 
 ## Play
 
-**VR (Quest, Pico, Index, hand tracking):** open the entry on play.js13kgames.com,
-press ENTER VR, pull a trigger. The unicorn is behind you. Input is only head
-pose, two hand poses, `select` (trigger / pinch) and `squeeze` (grip). You never
-move; everything comes to you.
+- **Headset**: open the entry on play.js13kgames.com in the Quest/Pico/PC-VR
+  browser, ENTER VR, pull a trigger. Controllers or hand tracking (pinch =
+  trigger). Nothing uses thumbsticks or buttons other than trigger/grip.
+- **Desktop** (for testing and judging without a headset): `npm run dev` and open
+  <http://localhost:8080/dist/>. PLAY ON DESKTOP, click the canvas, pull a trigger
+  (left mouse button).
 
-**Desktop fallback** (for testing and judging without a headset; not a category
-entry):
-
-```
-mouse            look (click the canvas for pointer lock)
-WASD / QE        move the right hand (x/z, y)      IJKL / UO   move the left hand
-LMB / RMB        right / left trigger              Space       both grips (forge)
-1 2 3 4 5        canned sigils: Shards, Maul, Halo, Prism, Lance
-R restart        M mute
-```
-
-The unicorn you are guarding stands **behind** you: turn around to see it and
-its five Light motes. Enemies come from the front and the sides toward it.
-
-Desktop weapon use (the keys move a hand at 5 m/s, fast enough to strike):
-
-| weapon | desktop |
-|---|---|
-| Rope (bar) | hold hands apart (A/D or J/L), then tap W/S or I/K to swing the bar through an enemy |
-| Bow | with the bar taut, hold LMB and tap S to draw the right hand back, release LMB |
-| 5 Lance | tap W repeatedly to thrust; the shaft points from the left hand through the right |
-| 3 Halo | LMB throws the ring in the look direction; it returns to the right hand |
-| 2 Maul | swing the right hand with A/D through an enemy; the head colour cycles |
-| 1 Shards | slash with W/S (right) or I/K (left); LMB / RMB throws a blade |
-| 4 Prism | hold LMB for the beam in the look direction (5/s with Spectrum, 1/s without) |
-
-## The rainbow
-
-Red is always at your left hand, violet at your right. As a raw rope it is:
-
-| form | how | what |
+| VR | desktop | rainbow |
 |---|---|---|
-| Whip | slack rope, flick fast | crack at the tip: damage 2, knockback |
-| Arc | hands ≥ 0.8 m apart → rigid bar, swing | melee strike, damage 3 |
-| Block | hold the bar taut | orbs shatter; a matching-colour orb is absorbed (+1 Spectrum) |
-| Bow | taut, pull a trigger and draw that hand back | arrow, band = where you pull |
+| both triggers | B (hold) or both mouse buttons | **arch** — rigid, blocks gores and charges; a fast swing strikes |
+| swing, let go | Space | **boomerang** — flies out 9 m and comes back to your hand, hitting everything on both legs |
+| one trigger, swing, let go | G | **lasso** — the loop catches a unicorn; pull your hand back hard to kill |
+| flick the slack rope | WASD while no trigger | **whip** crack |
+| arch + clap hands (needs three colour hits) | N | **Nova** — a rainbow shockwave, everything within 6 m |
+| — | mouse | look |
+| — | WASD / QE | move both hands |
+| — | R / M | restart / mute |
 
-**Forge:** hold both grips (hand tracking: both pinches with the hands together
-for 0.4 s). Time slows to 15 %. Draw a sigil, release. An unrecognised sigil
-returns the raw rope. Releasing without drawing unforges.
+**Colour**: red is always at your left hand, violet at your right. The band that
+touches a horn of the same colour does triple damage and charges the Nova. Each
+gore greys out one band of your rainbow from the violet end; a greyed colour is
+gone until you kill a giant (+2).
 
-```
- Stretch      pull the hands apart along a line to ≥ 1.1 m         → LANCE  (2.2 m, pierces 3, blocks)
- Circle       hands together, trace a loop                          → HALO   (thrown returning ring)
- Raise+slam   hands together, lift ≥ 0.35 m, bring down ≥ 0.35 m    → MAUL   (breaks any plate; slam with Spectrum)
- Cross        start with the wrists crossed, pull apart to ≥ 0.5 m  → SHARDS (twin blades: R O Y | B I V)
- Wring        hands close, rotate the pair ≥ 150°                    → PRISM  (beam; roll the right hand for the band)
-```
+## Build, run, test
 
-## Colour resonance
-
-Every enemy shows a glowing weakness colour. Hit it with that band for ×3 damage
-and a stagger. Shell plates and Gloam's plates only break from a resonant hit or
-the Maul. *How* you swing — which end leads — is aiming.
-
-## Waves
-
-Eight waves across two storm-giants: **Thunderhead** (wave 4, its eye opens —
-shoot it) and **Gloam** (wave 8, six coloured plates, then a Lance duel). Five
-Light. Dawn comes when Gloam falls.
-
-A third boss, the **Eclipse** (waves 9–12: summons, then a light-eater pulse you
-shield with the taut rope or Lance across the unicorn), is fully implemented and
-tested but does not fit the 13 KB limit together with sound and hit embers; build
-with `--eclipse --no-audio` to play it.
-
-## Build and test
-
-```
-npm install                 # terser, roadroller, @gfx/zopfli, playwright, three (API reference only)
-npx playwright install chromium firefox
-node build.js --level 2                  # dist/index.html + dist/sevenfold.zip, size table, gate
-node test/sim.test.js                    # 109 Node tests: rope, forms, recogniser, weapons, bots
-node test/browser.test.js chromium --xr  # Playwright: built page in desktop mode + XR shim
-node test/browser.test.js                # chromium and firefox
-npm run dev                              # http://localhost:8080/  (dev shell: index.html, tools/play.html)
+```bash
+npm install
+node build.js                      # dist/index.html + dist/sevenfold.zip (fails above 13,312 bytes)
+npm run dev                        # http://localhost:8080/ (sources) and /dist/ (the build)
+node test/sim.test.js              # Node: rope, verbs, resonance, bots, determinism (~2 min)
+node test/browser.test.js chromium --xr   # Playwright: built zip, desktop + XR shim
+node tools/botrun.mjs 1 8          # perfect bot, seeds 1–8, per-wave clear times
 ```
 
-Build flags: `--no-audio`, `--no-particles` (both features are on by default),
-`--eclipse` (third boss, waves 9–12; needs `--no-audio` to fit),
-`--level 0|1|2` (roadroller effort), `--no-roll`. See DECISIONS.md.
+The dev server swaps the hosted Three.js URL for a local byte-identical copy
+(the host sends no CORS header, so a page on localhost cannot import it
+cross-origin); the built files and the zip are untouched.
 
-Local note: the hosted Three.js has no CORS header, so pages on localhost cannot
-import it cross-origin. The dev server serves a byte-identical local copy under
-the same URL for any page it serves; the tests route the URL the same way. The
-shipped zip is untouched (it is same-origin on play.js13kgames.com).
+## How it is made
 
-## Repository
+- `src/sim.js` — pure simulation, no Three: the rope (Verlet, 29 points) and its
+  modes, the boomerang, the lasso, the Nova, the shadow unicorns (three variants,
+  two giants), ten waves, colours-as-lives. Fixed 1/90 s step, seeded, deterministic.
+- `src/render.js` — Three.js r185 core only: one custom shader lights the dead
+  forest, the standing stones, the ground and the instanced unicorns (fresnel rim,
+  a point light at the rainbow, lightning flash, fog, galloping legs in the
+  vertex shader); a sky dome with a dead red moon; 1800 GPU ash particles; 900
+  GPU-aged burst particles; lightning tubes; the rainbow tube rebuilt every
+  frame; a canvas text plane; Dawn.
+- `src/audio.js` — Web Audio, no samples: wind, delayed positional thunder, the
+  choir of horns (a panned voice per unicorn on a seven-note Phrygian scale that
+  turns Lydian at dawn), a bass pulse per wave, and a sound for every event.
+- `src/input.js`, `src/xr.js`, `src/main.js` — desktop controls and macros,
+  hand-written WebXR bootstrap (no XRButton), the loop and the `window.SF` test
+  hook. `build.js` — concat → terser → Roadroller → inline → zopfli zip → size gate.
+- `test/` — the sim suite with the scripted bots, the Playwright suite, the fake
+  `navigator.xr` shim, the recorded bot replay.
 
-```
-src/   vec.js sim.js input.js xr.js audio.js render.js main.js   (see docs/04)
-test/  sim.test.js bot.js trajectories.js browser.test.js xr-shim.js replays/
-tools/ serve.cjs play.html smoke.mjs botrun.mjs runall.sh trace*.mjs why.mjs
-build.js  DECISIONS.md  SUBMISSION.md  docs/
-```
+See `docs/09-rehaul.md` for the design, `DECISIONS.md` for every tuning
+decision, `SUBMISSION.md` for the submission checklist.
 
-The whole game — rope, weapons, enemies, waves, bosses — is a pure JavaScript
-simulation (`src/sim.js`, no Three.js) at a fixed 90 Hz step, seeded and
-deterministic. Three.js only renders and reads XR poses. The scripted bots in
-`test/bot.js` play the full game in Node; they are the headset.
+## Credits and licence
 
-## Credits
-
-Code, design and all assets: procedural, written for this entry.
-Three.js r185 (MIT) hosted by js13kGames. Sound is a tiny custom Web Audio synth
-(no ZzFX in the shipped build). MIT licence.
+Code and content by Arjun Vinod with Claude. Three.js (MIT) is loaded from the
+js13kGames host as the category rules require; nothing else is loaded. Licence:
+MIT.

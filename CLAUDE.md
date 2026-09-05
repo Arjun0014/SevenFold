@@ -1,19 +1,21 @@
 # SEVENFOLD — js13kGames 2026, WebXR category
 
-Read this file first, then `docs/01` → `docs/08` in order, then `PROMPT.md`. These
-documents are the spec. Where they are silent, decide, log it in `DECISIONS.md`, and
+Read this file first, then **`docs/09-rehaul.md`** (the current design; it supersedes
+`docs/01`, `02`, `03` and `05`), then `docs/04`, `06`, `07`, `08`. These documents are the spec. Where they are silent, decide, log it in `DECISIONS.md`, and
 continue. Never stop to ask the user — they are away and want a finished, tested,
 zipped game.
 
 ## What this is
 
 A standing-play WebXR arena-survival game for the js13kGames 2026 WebXR category
-(theme: **Unicorns and Rainbows**). You hold the two ends of a living rainbow. As a
-raw rope it is a whip, a rigid arc, a shield and a bow. Squeeze both grips and time
-slows: draw a sigil with your hands and the rainbow **forges** into one of five
-weapons (Lance, Halo, Maul, Shards, Prism). Enemies of the Umbra come in waves
-across a dark cloud-sea to snuff out the last unicorn; every seventh colour you
-strike with matters. Three bosses. Dark, mystical, luminous.
+(theme: **Unicorns and Rainbows**). You are a mage holding the last rainbow. The
+Umbra took the colour out of the unicorns' world and sends its hollow herd against
+you: ash-black unicorns with one burning horn each. The rope between your hands
+is every weapon: an arch that blocks (both triggers), a boomerang (swing and let
+go), a lasso (one trigger, swing, let go, pull), a whip, and a Nova (clap the
+charged arch). Match a horn's colour to shatter it. Seven colours are seven lives.
+Ten waves, two giants (the Herald, the Sovereign), then Dawn. A dead forest under
+ash and lightning; every unicorn sings its colour — the horde is the music.
 
 Library: **Three.js r185 ESM, hosted by js13kGames** at
 `https://play.js13kgames.com/2026/webxr/three.js` — the one allowed external file.
@@ -47,9 +49,8 @@ Library: **Three.js r185 ESM, hosted by js13kGames** at
 - Input is only: head pose, two controller/hand poses, `select` (trigger / pinch),
   `squeeze` (grip). Nothing depends on buttons, thumbsticks or specific controller
   models, so Quest, Pico, Index and hand-tracking all work.
-- The weapon is **simulated, not gesture-classified**, in its raw state (docs/02).
-  Forging is the only place a "sigil" is recognised, it happens in slow time with
-  visible feedback, and an unrecognised sigil harmlessly returns the raw rainbow.
+- The weapon is **simulated, not gesture-classified**: every verb is a physical
+  state of the rope and the triggers (docs/09). There is no sigil recogniser.
 - The whole game (rope, weapon forms, combat, waves, bosses) runs in a pure
   JavaScript simulation module with **no Three.js dependency**, driven at a fixed
   timestep, seeded, deterministic. Three.js only renders and reads XR poses. Tests
@@ -60,30 +61,27 @@ Library: **Three.js r185 ESM, hosted by js13kGames** at
 
 ## Priority order when cutting for size (cut from the bottom)
 
-1. XR bootstrap + desktop fallback, rope rainbow with whip/arc/block/bow, arena,
-   enemies + 8 waves, unicorn Light (health), game over/restart, score save
-2. Forge with the five forms (Lance, Halo, Maul, Shards, Prism)
-3. Boss 1 (Thunderhead), then Boss 2 (Gloam), then Boss 3 (Eclipse)
-4. Colour resonance system (weakness glyphs, ×3 damage)
-5. Sound (ZzFX + drone), positional audio
-6. Particles, hit-stop, dissolve effects, unicorn animation
-7. Endless mode + combo scoring
+1. XR bootstrap + desktop fallback, the rope with arch/boomerang/lasso/whip/Nova,
+   shadow unicorns (three variants), ten waves, colours-as-lives, game over/restart,
+   score save, the Herald and the Sovereign
+2. The world: dead forest, ash, lightning, sky, the rainbow light, Dawn
+3. Sound: wind, thunder, the choir of horns, the bass pulse, event sounds
+4. Particles: hoof ash, giant mist, bursts; the ground grain; standing stones
+5. Endless mode + combo scoring (not implemented)
 
-1–2 are never cut. If 3–7 don't fit, cut in reverse order and log it.
+1–3 are never cut. If 4–5 don't fit, cut in reverse order and log it.
 
 ## Definition of done (all must be true before you stop)
 
-- [ ] `node test/sim.test.js` passes: rope stability, all five sigils recognised
-      from synthetic trajectories (and negatives rejected), raw-form transitions,
-      damage/resonance table, every wave 1–12 clearable by the scripted perfect bot
-      and failable by the idle bot, all three bosses beatable by the bot with each
-      required form, determinism hash check.
+- [ ] `node test/sim.test.js` passes: rope stability, every verb (whip, arch strike,
+      block, boomerang, lasso, Nova), resonance and greyed colours, seven lives, the
+      giant reward, idle bot dies, perfect bot reaches Dawn on seeds 1–5 with the
+      per-wave time windows, no-block bot fails, determinism hash check.
 - [ ] `node test/browser.test.js` passes in **chromium and firefox**: the built,
-      unzipped `index.html` boots in desktop mode with zero console errors; scripted
-      inputs forge every form and the correct meshes appear; waves 1–2 completed;
+      unzipped `index.html` boots in desktop mode with zero console errors; the bot
+      replay reaches wave 3; the desktop macros produce throw/arch/lasso/Nova events;
       game over + restart; renderer stats within budget; XR entry/exit through the
-      shim (chromium) with zero errors — or, if the shim is dropped per docs/07, the
-      fallback checks are green and the manual emulator checklist is written.
+      shim (chromium) with a throw and catch, zero errors.
 - [ ] `node build.js` emits `dist/index.html` and `dist/sevenfold.zip`, prints size
       breakdown, fails above 13,312 bytes.
 - [ ] `unzip -l dist/sevenfold.zip` shows only `index.html`; `unzip -t` OK.

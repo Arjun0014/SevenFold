@@ -1,7 +1,5 @@
-import {createSim} from '../src/sim.js';
-import {makeBot,runGame} from '../test/bot.js';
-const seed=+process.argv[2]||1,stop=+process.argv[3]||4,no=process.argv[4]=='no';
-const S=createSim(seed);const b=makeBot(S,{noForge:no});
-const t0=Date.now();const r=runGame(S,b,{stopWave:stop,maxT:600});
-console.log(JSON.stringify({waves:r.waves,light:r.light,minLight:r.minLight,reached:r.reached,t:r.t,ws:r.ws,ms:Date.now()-t0}));
-console.log(JSON.stringify(r.counts));console.log(JSON.stringify(r.phases));
+// botrun.mjs — run the perfect bot over seeds and print per-wave clear times. Usage: node tools/botrun.mjs [seedFrom] [seedTo] [--idle|--noblock]
+import {runBot} from '../test/bot.js';
+const a=process.argv.slice(2),from=+a[0]||1,to=+a[1]||from,o={idle:a.includes('--idle'),noBlock:a.includes('--noblock')};
+for(let s=from;s<=to;s++){const r=runBot(s,o);
+  console.log(`seed ${s}: ${r.done?'DAWN':r.over?'DIED':'timeout'} wave ${r.wave} light ${r.light} t ${r.t}s thrown ${r.thrown} | waves ${r.waves.map(w=>w[0]+':'+w[1].toFixed(0)+'s').join(' ')} | hurt ${JSON.stringify(r.hurt)} | ev ${['throw','catch','hit','res','block','nova','gore','stagger','kill'].map(k=>k+'='+(r.ev[k]||0)).join(' ')}`)}

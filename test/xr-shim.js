@@ -2,7 +2,7 @@
 // Fakes: isSessionSupported, requestSession → session with requestReferenceSpace, requestAnimationFrame (XRFrame with
 // getViewerPose → two views, getPose for two tracked-pointer input sources), updateRenderState/renderState.baseLayer,
 // inputSources, events, end; a global XRWebGLLayer whose framebuffer is null (Three renders to the default framebuffer)
-// with per-eye viewports; gl.makeXRCompatible. Test API: window.__xr.{frames, press, release, sigil, end, state}.
+// with per-eye viewports; gl.makeXRCompatible. Test API: window.__xr.{frames, press, release, move, throw, end, state}.
 (()=>{
   const st={head:[0,1.6,0],L:[-.25,1.2,-.4],R:[.25,1.2,-.4],frames:0,session:null,anim:null};
   const mat=p=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,p[0],p[1],p[2],1]);
@@ -35,14 +35,8 @@
     press:(h,k)=>st.session.dispatch(k+'start',{inputSource:src(h)}),
     release:(h,k)=>{st.session.dispatch(k+'end',{inputSource:src(h)});st.session.dispatch(k,{inputSource:src(h)})},
     move:(h,p)=>{st[h=='left'?'L':'R']=p},
-    // both squeezes held while the grips move through a sigil (world space: head at origin facing -z), then released
-    sigil:(name,dur=500)=>new Promise(res=>{const Y=1.2,Z=-.4,g={
-        lance:u=>{const d=.05+1.25*u;return[[-d/2,Y,Z],[d/2,Y,Z]]},
-        shards:u=>{const x=-.15+.5*u;return[[x,Y,Z],[-x,Y,Z]]},
-        maul:u=>{const y=Y+(u<.5?u*2:2-u*2)*.6;return[[-.1,y,Z],[.1,y,Z]]},
-        halo:u=>{const t=u*6.6,x=Math.sin(t)*.22,y=Y+(1-Math.cos(t))*.22;return[[x-.1,y,Z],[x+.1,y,Z]]},
-        prism:u=>{const t=u*3.49,c=Math.cos(t)*.15,s=Math.sin(t)*.15;return[[-c,Y-s,Z],[c,Y+s,Z]]}}[name];
-      __xr.press('left','squeeze');__xr.press('right','squeeze');
-      st.anim={t0:performance.now(),dur,fn:u=>{const[l,r]=g(u);st.L=l;st.R=r},done:()=>{setTimeout(()=>{__xr.release('left','squeeze');__xr.release('right','squeeze');setTimeout(res,400)},60)}}}),
+    // both selects held while the grips swing forward (world space: head at origin facing -z), then released → boomerang
+    throw:(dur=260)=>new Promise(res=>{__xr.press('left','select');__xr.press('right','select');
+      let rel=0;st.anim={t0:performance.now(),dur,fn:u=>{const z=-.3-.9*u*u,y=1.2+.15*Math.sin(u*Math.PI);st.L=[-.25,y,z];st.R=[.25,y,z];if(u>=.75&&!rel){rel=1;__xr.release('left','select');__xr.release('right','select')}},done:()=>setTimeout(res,300)}}),
     end:()=>st.session.end()};
 })();
