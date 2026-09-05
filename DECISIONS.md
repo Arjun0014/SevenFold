@@ -386,3 +386,13 @@ cut ... write proper test scripts."
 - A pose source that updates slower than every nine sim steps (a slow browser
   emulator, a stalled frame) no longer decays the hand velocity between
   updates, so swings still register there; the decay used to start after three.
+
+## Scenery wobble fix (session 2026-09-05)
+
+- Three r185 fills `instanceColor` with 1 the first time `setColorAt` is called,
+  so every tree and stone except instance 0 had blue = 1, which the world
+  vertex shader reads as "gallop amount". Their lower vertices sheared
+  sideways at about 2 Hz: the constant width pulse on all scenery. `inst` now
+  zeroes the whole instance-colour array (−2 bytes zipped). `tools/wobble.mjs`
+  traverses the dev scene and fails if any world-shader instance has a
+  non-zero blue channel; pre-fix it reported 45/46 trees and 7/8 stones.

@@ -16,7 +16,7 @@ const merge=L=>{const P=[],Nn=[],E=[],m=new rdT.Matrix4,eu=new rdT.Euler,q=new r
   const o=new rdT.BufferGeometry;o.setAttribute('position',new rdT.Float32BufferAttribute(P,3));o.setAttribute('normal',new rdT.Float32BufferAttribute(Nn,3));o.setAttribute('e',new rdT.Float32BufferAttribute(E,1));return o};
 const withE=g=>{g.setAttribute('e',new rdT.Float32BufferAttribute(new Float32Array(g.attributes.position.count),1));return g};
 const withS=(g,f)=>{const p=g.attributes.position,u=g.attributes.uv;for(let i=0;i<p.count;i++)u.setX(i,f(p.getX(i),p.getY(i),p.getZ(i)));return g};
-const inst=(g,m,n,par)=>{const o=new rdT.InstancedMesh(g,m,n);o.frustumCulled=false;(par||rdWorld).add(o);rdM4.makeScale(0,0,0);for(let i=0;i<n;i++)o.setMatrixAt(i,rdM4);o.setColorAt(0,rdC(0));return o};
+const inst=(g,m,n,par)=>{const o=new rdT.InstancedMesh(g,m,n);o.frustumCulled=false;(par||rdWorld).add(o);rdM4.makeScale(0,0,0);for(let i=0;i<n;i++)o.setMatrixAt(i,rdM4);o.setColorAt(0,rdC(0)).instanceColor.array.fill(0);return o}; // r185 fills instanceColor with 1: blue=1 would gallop every tree and stone
 const place=(o,i,p,yaw,s,pitch)=>{rdM4.compose(rdV.set(p[0],p[1],p[2]),rdQ.setFromAxisAngle(rdUp,yaw||0),rdS.set(s,s,s));
   if(pitch)rdM4.multiply(rdPa).multiply(rdPx.makeRotationX(pitch)).multiply(rdPb);o.setMatrixAt(i,rdM4)};
 const flush=o=>{o.instanceMatrix.needsUpdate=true;o.instanceColor.needsUpdate=true};
