@@ -39,7 +39,7 @@ const W_F=`uniform vec3 c[7],lp,bd,lc;uniform float fl,li,dawn;${FOG}varying vec
 void main(){vec3 n=normalize(vn),v=normalize(cameraPosition-vw),L=lp-vw;float d=length(L),r=pow(1.-max(dot(n,v),0.),3.);
 vec3 k=mix(vec3(.022,.024,.034),vec3(.1,.07,.08),dawn)+mix(vec3(.045,.05,.075),vec3(.42,.33,.32),dawn)*(.5+.5*n.y)+mix(vec3(.3,.34,.48),vec3(.9,.7,.6),dawn)*r*.38
 +lc*li*max(dot(n,L/d),0.)/(1.+d*d)+fl*vec3(.5,.35,.6)*max(dot(n,bd),0.);
-k*=.88+.2*fract(sin(dot(mod(floor(vw.xz*12.)+floor(vw.y*12.)*7.,64.),vec2(12.9898,78.233)))*4375.85);
+vec2 cc=floor(vw.xz*12.)+floor(vw.y*12.)*7.;vec3 hh=fract(vec3(cc.x,cc.y,cc.x)*.1031);hh+=dot(hh,hh.yzx+33.33);k*=.88+.2*fract((hh.x+hh.y)*hh.z);
 int b=int(vb*7.);float f=fract(vb*7.);k=mix(k,c[b]*(1.2+f*3.)+f*.5,ve);
 gl_FragColor=vec4(mix(k,fogColor,smoothstep(fogNear,fogFar,vd)),1.);}`;
 const RB_V='varying float v;uniform float w;void main(){v=uv.x;gl_Position=projectionMatrix*modelViewMatrix*vec4(position+normal*w,1.);}';

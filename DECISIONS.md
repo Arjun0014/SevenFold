@@ -275,4 +275,4 @@ weapons, innovative music and VR-worthy sound effects. Asked once, answered:
 | step | raw | min | rolled | zip |
 |---|---|---|---|---|
 | rehaul, first full build (level 1) | 45,346 | 33,205 | 16,730 | 13,044 |
-| visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | **13,222** |
+| visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | **13,245** |

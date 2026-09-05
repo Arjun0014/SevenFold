@@ -38,7 +38,7 @@ else{
     else if(!started)inpPoll(cam,0);
     const ev=sim.drain();for(const e of ev){evLog.push(e.k);if(e.k=='hit'||e.k=='crack'||e.k=='catch')xrPulse(.5,40);if(e.k=='res'||e.k=='block')xrPulse(.9,80);if(e.k=='hurt')xrPulse(1,250);if(e.k=='over'||e.k=='dawn')save()}
     if(evLog.length>600)evLog=evLog.slice(-300);
-    rdSync(sim,ev,dt,R.domElement.height);auSync(sim,ev,mute);
+    rdSync(sim,ev,dt,xrS.on?1700:R.domElement.height);auSync(sim,ev,mute);
     R.render(scene,cam);
   });
 }

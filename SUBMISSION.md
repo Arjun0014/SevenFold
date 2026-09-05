@@ -45,11 +45,11 @@ giant on desktop before submitting and tell me what to change.
 
 | step | bytes |
 |---|---|
-| source, concatenated | 45,840 |
-| terser (property-mangled) | 33,585 |
-| roadroller -O1 | 16,961 |
-| index.html (inlined) | 17,601 |
-| **dist/sevenfold.zip** | **13,222** (limit 13,312; margin 90) |
+| source, concatenated | 45,896 |
+| terser (property-mangled) | 33,639 |
+| roadroller -O1 | 16,992 |
+| index.html (inlined) | 17,632 |
+| **dist/sevenfold.zip** | **13,245** (limit 13,312; margin 67) |
 
 Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
 zip by ±15 bytes. `build.js` fails above the limit, so a rebuild can never ship
