@@ -275,7 +275,12 @@ weapons, innovative music and VR-worthy sound effects. Asked once, answered:
 | step | raw | min | rolled | zip |
 |---|---|---|---|---|
 | rehaul, first full build (level 1) | 45,346 | 33,205 | 16,730 | 13,044 |
-| visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | **13,245** |
+| visual pass (grain, stones, hoof ash, giant mist, tuning) | 45,840 | 33,585 | 16,961 | 13,245 |
+| sine-free grain hash, XR particle scale | 45,896 | 33,639 | 16,992 | 13,245 |
+| velocity per pose update, release grace, level 2 | 46,276 | 33,896 | 17,017 | 13,260 |
+| keyboard assist inside VR, trims, zopfli 200 | 46,300 | 33,805 | 17,012 | 13,258 |
+| teleports are not swings | 46,382 | 33,838 | 17,034 | 13,275 |
+| sigils + golf (forward vectors, sound table, trims) | 46,708 | 33,327 | 17,066 | **13,285** |
 
 ## Emulator pass (2026-09-05, user present)
 
@@ -338,3 +343,46 @@ The user reported that in the emulator's VR mode the keyboard did nothing and
   "valid swing" range and armed the throw grace, so releasing the arch a moment
   later threw the boomerang. A pose jump faster than 20 m/s now zeroes the hand
   velocity instead of being averaged in. 13,275 bytes.
+
+## Sigils return (2026-09-05, user present)
+
+The user: "the sigils and weapon forms were the main thing I thought before, can
+we not bring them back? ... convert current verbs to sigils if possible, not all
+needed, just a few so that mechanic is there ... I don't want anything else to be
+cut ... write proper test scripts."
+
+- **Design**: both grips (squeeze) now mean *forge* instead of doubling as
+  triggers. While held, the world runs at 15 % and the rainbow turns white; on
+  release a sigil is recognised from features accumulated while drawing (no
+  trail arrays): circle → the boomerang launches straight ahead, cross → the
+  lasso is cast ahead, raise-and-slam → Nova when charged. The sigils fire the
+  existing verbs, so no weapon code was added; a miss just drops the rope.
+  Hand tracking has no grip, so it keeps the physical verbs only.
+- **Desktop**: Space/G/N now draw the three sigils (they used to run the
+  physical macros); V holds both grips; the physical verbs remain on B/LMB/RMB
+  + WASD. Inside VR the same keys work as an emulator assist.
+- **Bytes**: the sigil layer cost ≈ 380 bytes zipped. No feature was cut. Room
+  was found with: forward vectors instead of quaternions between input, sim,
+  render and audio (the hand-written quaternion multiply and the yaw helper
+  are gone); table-driven simple sounds; the lasso launch shared by the
+  trigger release and the sigil; teleport-safe velocity; shorter hints,
+  overlay and Dawn text; one ground-noise term, one fewer tree branch, two
+  oscillators per voice, no stone tilt, no lightning flicker or cue pulse, no
+  sky horizon glow (the fog still brightens), no moon halo, no separate
+  unforge sound, and a best score stored as a number. Level 2, zopfli 200.
+  Rounding shader floats saved almost nothing: Roadroller's cost is
+  information, not characters, so tables of numbers are not smaller than
+  repetitive code.
+- **Bugs found by the new tests**: the lasso's aim-assist query (3 m) had been
+  reused as the catch radius; the audio listener still read the head
+  quaternion after the refactor and crashed the first XR frame with sound on;
+  a circle-sigil throw launched too steeply to hit a stalker at 4 m (now
+  horizontal; the lasso keeps a 0.3 upward component); forging was refused
+  between waves.
+- Tests: sim suite 23/23 (four sigil tests: circle/cross/slam with effects,
+  negatives, 2.5 s timeout, 0.5 s cooldown, slow-motion), browser suite 9/9
+  (Space/G/N are sigils), IWER pass with a drawn circle, controls audit 65
+  rows.
+- A pose source that updates slower than every nine sim steps (a slow browser
+  emulator, a stalled frame) no longer decays the hand velocity between
+  updates, so swings still register there; the decay used to start after three.

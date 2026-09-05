@@ -1,7 +1,7 @@
 # SEVENFOLD
 
 A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
-Rainbows*), category **WebXR**. One `index.html`, 13,275 bytes zipped, plus the
+Rainbows*), category **WebXR**. One `index.html`, 13,285 bytes zipped, plus the
 competition's hosted Three.js.
 
 You are a mage holding the last rainbow. The Umbra took the colour out of the
@@ -28,7 +28,11 @@ colour from where it stands — the horde is the music.
 | swing, let go | Space | **boomerang** — flies out 9 m and comes back to your hand, hitting everything on both legs |
 | one trigger, swing, let go | G | **lasso** — the loop catches a unicorn; pull your hand back hard to kill |
 | flick the slack rope | WASD while no trigger | **whip** crack |
-| arch + clap hands (needs three colour hits) | N | **Nova** — a rainbow shockwave, everything within 6 m |
+| arch + clap hands (needs three colour hits) | — | **Nova** — a rainbow shockwave, everything within 6 m |
+| both grips, draw a **circle**, let go | Space | sigil: the boomerang launches ahead |
+| both grips, **cross** the hands then pull apart | G | sigil: the lasso is cast ahead |
+| both grips, **raise and slam** | N | sigil: Nova (when charged) |
+| both grips (hold) | V | time slows, the rainbow turns white: draw a sigil |
 | — | mouse | look |
 | — | WASD / QE | move both hands |
 | — | R / M | restart / mute |
@@ -54,7 +58,7 @@ node test/sim.test.js              # Node: rope, verbs, resonance, bots, determi
 node test/browser.test.js chromium --xr   # Playwright: built zip, desktop + XR shim
 node tools/botrun.mjs 1 8          # perfect bot, seeds 1–8, per-wave clear times
 node tools/iwer.mjs                # the built zip through Meta's WebXR emulation runtime (Quest 3 profile)
-node tools/controls.mjs            # every control, desktop and VR: a 59-row pass/fail table
+node tools/controls.mjs            # every control, desktop and VR, sigils included: a 65-row pass/fail table
 ```
 
 The dev server swaps the hosted Three.js URL for a local byte-identical copy

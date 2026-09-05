@@ -35,9 +35,12 @@ await page.evaluate(()=>__btn('right','trigger',1));await page.waitForTimeout(50
 await page.evaluate(()=>__anim(u=>{const a=u*20;__dev.controllers.right.position.set(Math.sin(a)*.35,1.7+Math.cos(a)*.1,-.2-Math.cos(a)*.35);if(u>=.9)__btn('right','trigger',0)},900));
 await page.waitForTimeout(1500);log('after lasso swing',JSON.stringify(await st()));await shot('lasso');
 await page.evaluate(()=>__dev.controllers.right.position.set(.25,1.2,-.4));await page.waitForTimeout(500);
-// squeeze counts as trigger
-await page.evaluate(()=>{__btn('left','squeeze',1);__btn('right','squeeze',1)});await page.waitForTimeout(400);log('both squeezes',JSON.stringify(await st()));
-await page.evaluate(()=>{__btn('left','squeeze',0);__btn('right','squeeze',0)});await page.waitForTimeout(300);
+// sigils: both grips, draw a circle, release → the boomerang launches; a cross → the lasso; raise-and-slam → Nova when charged
+await page.waitForFunction(()=>SF.state().mode==0,null,{timeout:6000}).catch(()=>{});await page.waitForTimeout(600);
+await page.evaluate(()=>{__btn('left','squeeze',1);__btn('right','squeeze',1)});await page.waitForTimeout(150);
+await page.evaluate(()=>__anim(u=>{const a=u*6.6;__dev.controllers.left.position.set(-.1+Math.sin(a)*.2,1.3+Math.cos(a)*.2,-.5);__dev.controllers.right.position.set(.1+Math.sin(a)*.2,1.3+Math.cos(a)*.2,-.5)},900));
+await page.evaluate(()=>{__btn('left','squeeze',0);__btn('right','squeeze',0)});await page.waitForTimeout(400);log('circle sigil',JSON.stringify(await st()));await shot('sigil');await page.waitForTimeout(2500);
+await page.evaluate(()=>{__dev.controllers.left.position.set(-.25,1.2,-.4);__dev.controllers.right.position.set(.25,1.2,-.4)});await page.waitForTimeout(500);
 // hand tracking: pinch
 await page.evaluate(()=>{__dev.primaryInputMode='hand';__dev.hands.left.position.set(-.25,1.2,-.4);__dev.hands.right.position.set(.25,1.2,-.4)});await page.waitForTimeout(800);log('hands mode',JSON.stringify(await st()));
 await page.evaluate(()=>{__dev.hands.right.updatePinchValue(1)});await page.waitForTimeout(600);log('right pinch',JSON.stringify(await st()));

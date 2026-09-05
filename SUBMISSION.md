@@ -25,22 +25,26 @@ extension (or the WebXR API Emulator):
 4. Hold one trigger for a moment: the rope hangs from that hand with a loop.
    Swing it and let go: the loop flies. Catch a unicorn, pull your hand back
    sharply: it dies.
-5. Wave 1: four stalkers. Block one rear-up with the arch (clank, it staggers).
+5. Hold both grips: the world slows and the rainbow turns white. Draw a circle
+   and let go: the boomerang launches ahead. Cross your hands and pull apart:
+   the lasso is cast. Raise and slam with a full charge: Nova.
+6. Wave 1: four stalkers. Block one rear-up with the arch (clank, it staggers).
    Match a horn's colour (red is your left end, violet your right): the chord and
    the coloured burst mean a resonant hit. Three of those: the rainbow pulses
    white and a seven-note chime plays. Hold the arch and clap: Nova.
-6. `SF.state()` in the console shows draw calls (`calls`, budget ≤ 60; tests see
+7. `SF.state()` in the console shows draw calls (`calls`, budget ≤ 60; tests see
    12) and triangles (`tris`, ~30k).
-7. Press the emulator's exit → the page returns to desktop mode with the
+8. Press the emulator's exit → the page returns to desktop mode with the
    PLAY ON DESKTOP / ENTER VR button, no errors.
-8. In the emulator you cannot move a controller and press a button at the same
+9. In the emulator you cannot move a controller and press a button at the same
    time, so the game remembers a fast swing for half a second: swing the
    controllers forward quickly in the panel, then release the triggers. The same
    grace applies to the lasso. The keyboard also works inside the session: WASD/QE
-   nudge both hands, B holds both triggers, Space throws, G lassoes, N claps.
+   nudge both hands, B holds both triggers, V holds both grips, Space/G/N draw the
+   three sigils.
    There is no locomotion by design: the player never moves; turn the headset to
    face the herd.
-9. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
+10. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
 
 **Firefox** could not be run on the build machine: Playwright's Firefox binary
 fails to start with a Windows side-by-side error ("Dependent Assembly mozglue …
@@ -56,11 +60,11 @@ giant on desktop before submitting and tell me what to change.
 
 | step | bytes |
 |---|---|
-| source, concatenated | 46,382 |
-| terser (property-mangled) | 33,838 |
-| roadroller -O2 | 17,034 |
-| index.html (inlined) | 17,674 |
-| **dist/sevenfold.zip** | **13,275** (limit 13,312; margin 37) |
+| source, concatenated | 46,708 |
+| terser (property-mangled) | 33,327 |
+| roadroller -O2 | 17,066 |
+| index.html (inlined) | 17,672 |
+| **dist/sevenfold.zip** | **13,285** (limit 13,312; margin 27) |
 
 The shipping build is `node build.js --level 2 --iter 200` (`npm run build`). Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
 zip by ±15 bytes. `build.js` fails above the limit, so a rebuild can never ship
@@ -103,8 +107,8 @@ ash and the boss mist (≈60 bytes), the ground grain (≈90), the standing ston
 | offline three.js → friendly message | ok | not run |
 | XR shim: enter, 300 frames, throw + catch, exit | ok | n/a |
 | IWER (Immersive Web Emulator runtime, Quest 3): enter, start, arch, throw, lasso, grips, pinches, exit | ok | n/a |
-| `node tools/controls.mjs`: every control, desktop (27 checks) and VR (32 checks) | 59/59 | n/a |
-| `node test/sim.test.js` | 19/19 | — |
+| `node tools/controls.mjs`: every control, desktop (28 checks) and VR (37 checks), sigils included | 65/65 | n/a |
+| `node test/sim.test.js` (sigils: circle, cross, slam, negatives, timeout, cooldown, slow-motion) | 23/23 | — |
 
 Perfect-bot clear times (seconds, seeds 1–8): waves 11–12, 15–16, 19–21, 18–20,
 **Herald 16–50**, 21–24, 19, 27–30, 31–33, **Sovereign ~60**. Every seed reaches

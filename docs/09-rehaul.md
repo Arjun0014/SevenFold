@@ -43,6 +43,26 @@ physical state of the triggers (squeeze counts as trigger, so grips work too):
 Colour resonance: a hit whose band equals the horn colour deals ×3 (a resonant
 hit), grants +1 charge and plays a chord. Any other hit deals normal damage.
 
+### Sigils (both grips)
+
+Hold both grips (squeeze) and the world slows to 15 % while the rainbow turns
+white; draw with your hands and let go. Three shapes are recognised from features
+that accumulate while you draw (no trails are stored): the midpoint's path length
+and total turning in the head's right/up plane, its rise then drop, and whether
+the hands ever crossed. Each sigil fires one of the verbs above, so the sigil
+layer adds no weapon code:
+
+| sigil | features | what fires |
+|---|---|---|
+| **circle** | turning ≥ 4.5 rad and path ≥ 0.6 m | the boomerang launches straight ahead (no swing needed) |
+| **cross** (hands crossed, then apart) | crossed at some point, hands ≥ 0.5 m apart at the end | the lasso loop is cast ahead at 11 m/s |
+| **raise and slam** | rise ≥ 0.3 m then drop ≥ 0.3 m, hands ≤ 0.4 m apart at the end | Nova, if charged |
+
+Anything else drops back to the rope (a grey puff, no penalty). A drawing
+resolves on release or after 2.5 s; 0.5 s cooldown. Sigils need both grips, so
+hand tracking (pinch only) uses the physical verbs. Desktop: Space, G and N draw
+the three sigils; V holds both grips for drawing by hand.
+
 ## Enemies — one species, three variants, two giants
 
 Shadow unicorns. One merged model (body, neck, head, horn, eyes, ears, tail,

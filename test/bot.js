@@ -4,7 +4,7 @@
 // about to gore or a charge is incoming; otherwise wind up and throw the boomerang aimed so the matching colour band
 // meets the target; clap for a Nova when charged and crowded; sidestep the boss's lightning rune.
 import {createSim,DT,N,hd} from '../src/sim.js';
-import {sin,cos,PI,atan2,hypot,add,sub,mul,norm,len,dist,lerp,clamp,qyaw} from '../src/vec.js';
+import {sin,cos,PI,atan2,hypot,add,sub,mul,norm,len,dist,lerp,clamp} from '../src/vec.js';
 
 const VT4=[.75,0,1,1.2,1]; // rear times by variant (mirror of sim VT[v][4])
 export function makeBot(S,o={}){
@@ -52,9 +52,9 @@ export function makeBot(S,o={}){
       }
     }
     b.L=moveTo(b.L,L,hs);b.R=moveTo(b.R,R,hs);
-    const q=qyaw(b.yaw+PI),Hq=[q[0],q[1],q[2],q[3]],Hp=[b.hp[0],1.6,b.hp[1]];
+    const Hq=[sin(b.yaw),0,cos(b.yaw)],Hp=[b.hp[0],1.6,b.hp[1]]; // forward vectors
     const fr=[b.L,Hq,lt,0,b.R,Hq,rt,0,Hp,Hq];if(b.rec)b.rec.push(o.exact?fr.map(x=>Array.isArray(x)?[...x]:x):fr.map(x=>Array.isArray(x)?x.map(v=>+v.toFixed(4)):x));
-    S.inject({p:b.L,q:Hq,t:lt,g:0},{p:b.R,q:Hq,t:rt,g:0},{p:Hp,q:Hq});S.step();b.lt=lt;b.rt=rt;
+    S.inject({p:b.L,f:Hq,t:lt,g:0},{p:b.R,f:Hq,t:rt,g:0},{p:Hp,f:Hq});S.step();b.lt=lt;b.rt=rt;
   };
   return b;
 }

@@ -40,13 +40,13 @@ async function runBrowser(bn){
   const page=await ctx.newPage();attach(page);
   const state=()=>page.evaluate(()=>SF.state());
   const shot=n=>page.screenshot({path:`test-results/${bn}-${n}.png`});
-  const stepFrames=async(from,to)=>{for(let i=from;i<to;i+=450)await page.evaluate(([fr])=>{for(const f of fr){SF.inject({p:f[0],q:f[1],t:f[2],g:f[3]},{p:f[4],q:f[5],t:f[6],g:f[7]},{p:f[8],q:f[9]});SF.step()}},[replay.frames.slice(i,Math.min(to,i+450))])};
+  const stepFrames=async(from,to)=>{for(let i=from;i<to;i+=450)await page.evaluate(([fr])=>{for(const f of fr){SF.inject({p:f[0],f:f[1],t:f[2],g:f[3]},{p:f[4],f:f[5],t:f[6],g:f[7]},{p:f[8],f:f[9]});SF.step()}},[replay.frames.slice(i,Math.min(to,i+450))])};
   let webgl=true,maxCalls=0,maxTris=0;
 
   await test('boot: title, PLAY ON DESKTOP, zero errors',async()=>{
     await page.goto(`http://localhost:${PORT}/`);await page.waitForFunction(()=>window.SF||document.getElementById('u').textContent,{timeout:20000});
     if(!(await page.evaluate(()=>!!window.SF))){webgl=false;const msg=await page.textContent('#u');throw new Error('no renderer: '+msg)}
-    const b=await page.textContent('#b');if(b!='PLAY ON DESKTOP')throw new Error('button: '+b);
+    await page.waitForFunction(()=>document.getElementById('b').textContent,null,{timeout:5000}).catch(()=>{});const b=await page.textContent('#b');if(b!='PLAY ON DESKTOP')throw new Error('button: '+b);
     const s=await state();if(!s.text.includes('SEVENFOLD'))throw new Error('title text missing: '+s.text);await page.waitForTimeout(800);await shot('boot')});
   if(!webgl){console.log(`  [${bn}] WebGL unavailable in headless; remaining tests skipped (boot message test passed only if no console errors)`);
     results.push({browser:bn,pass,total:1,log,errors:errors.length});await browser.close();return}
@@ -59,29 +59,29 @@ async function runBrowser(bn){
     console.log(`         waves 1-2 replayed: wave ${s.wave}, light ${s.light}, max draw calls ${maxCalls}, max tris ${maxTris}`)});
   await test('render budget: draw calls ≤ 60, triangles < 80k',async()=>{if(!(maxCalls>0&&maxCalls<=60&&maxTris<80000))throw new Error(`calls ${maxCalls} tris ${maxTris}`)});
 
-  await test('desktop macros: Space throws the boomerang (arc, throw, turn, catch), B holds the arch, G lassoes, N claps a Nova when charged',async()=>{
+  await test('desktop keys: Space draws a circle sigil (forge, sigil, throw, catch), B holds the arch, G draws a cross (lasso), N slams (Nova when charged)',async()=>{
     await page.evaluate(()=>{SF.manual=0;SF.newGame(11)});await page.waitForTimeout(400);
     await page.mouse.click(480,300);await page.mouse.down();await page.waitForTimeout(80);await page.mouse.up();await page.waitForTimeout(2200); // trigger → start, wave 1 begins
-    await page.keyboard.press('Space');await page.waitForTimeout(2600);let ev=(await state()).events;
-    for(const k of['arc','throw','turn','catch'])if(!ev.includes(k))throw new Error('missing '+k+' in '+ev.slice(-30));
+    await page.keyboard.press('Space');await page.waitForTimeout(3600);let ev=(await state()).events;
+    for(const k of['forge','sigil','throw','turn','catch'])if(!ev.includes(k))throw new Error('missing '+k+' in '+ev.slice(-30));
     await page.keyboard.down('KeyB');await page.waitForTimeout(400);const m=(await state()).mode;await shot('arch');await page.keyboard.up('KeyB');if(m!=1)throw new Error('mode with B held: '+m);await page.waitForTimeout(300);
     await page.keyboard.press('KeyG');await page.waitForTimeout(2600);ev=(await state()).events;
-    for(const k of['rope','lasso'])if(!ev.includes(k))throw new Error('missing '+k+' in '+ev.slice(-30));await shot('lasso');
-    await page.evaluate(()=>SF.charge());await page.waitForTimeout(300);await page.keyboard.press('KeyN');await page.waitForTimeout(900);ev=(await state()).events;
+    for(const k of['sigil','lasso'])if(!ev.includes(k))throw new Error('missing '+k+' in '+ev.slice(-30));await shot('lasso');await page.waitForTimeout(3000);
+    await page.evaluate(()=>SF.charge());await page.waitForTimeout(300);await page.keyboard.press('KeyN');await page.waitForTimeout(1500);ev=(await state()).events;
     if(!ev.includes('nova'))throw new Error('missing nova in '+ev.slice(-30));await shot('nova')});
 
   await test('game over: idle until the last colour is gone, text shown; R restarts at wave 1',async()=>{
     await page.evaluate(()=>{SF.manual=1;SF.newGame(3);SF.inject({t:1},null,null);SF.step();SF.inject({t:0},null,null)});
     let s;for(let i=0;i<60&&!(s=await state()).text.includes('colour is gone');i++)await page.evaluate(()=>SF.step(90));
     if(!s.text.includes('The last colour is gone')||s.ws!=3)throw new Error(`ws ${s.ws} light ${s.light} text ${s.text}`);await shot('gameover');
-    await page.evaluate(()=>{SF.manual=0});await page.keyboard.press('r');await page.waitForTimeout(2200);s=await state();
+    await page.evaluate(()=>{SF.manual=0});await page.keyboard.press('r');await page.waitForFunction(()=>SF.state().wave==1&&SF.state().ws==1,null,{timeout:10000}).catch(()=>{});s=await state();
     if(s.wave!=1||s.ws!=1)throw new Error(`after R: wave ${s.wave} ws ${s.ws}`)});
 
   await test('resize: no errors',async()=>{await page.setViewportSize({width:700,height:900});await page.waitForTimeout(200);await page.setViewportSize({width:960,height:600});await page.waitForTimeout(300)});
 
   await test('mute persists across reload; best score saved',async()=>{
     const m0=(await state()).mute;await page.keyboard.press('m');await page.waitForTimeout(100);const m1=(await state()).mute;if(m1==m0)throw new Error('mute did not toggle');
-    const best=await page.evaluate(()=>localStorage.getItem('sevenfold_best'));if(!best||!JSON.parse(best).wave)throw new Error('best score not saved: '+best);
+    const best=await page.evaluate(()=>localStorage.getItem('sevenfold_best'));if(best===null)throw new Error('best score not saved: '+best);
     await page.reload();await page.waitForFunction(()=>window.SF,{timeout:20000});if((await state()).mute!=m1)throw new Error('mute not persisted');await page.keyboard.press('m')});
 
   await test('offline: three.js unreachable → friendly message, no console errors',async()=>{

@@ -1,7 +1,7 @@
 // quick.mjs — ad-hoc sim harness
 import {createSim,DT,N,hd} from '../src/sim.js';
-const H={p:[0,1.6,0],q:[0,1,0,0]};
-const mk=()=>{const S=createSim(1);const inj=(L,R,lt=0,rt=0)=>{S.inject({p:L,q:[0,1,0,0],t:lt,g:0},{p:R,q:[0,1,0,0],t:rt,g:0},H);S.step()};
+const H={p:[0,1.6,0],f:[0,0,1]};
+const mk=()=>{const S=createSim(1);const inj=(L,R,lt=0,rt=0)=>{S.inject({p:L,f:[0,0,1],t:lt,g:0},{p:R,f:[0,0,1],t:rt,g:0},H);S.step()};
   const L0=[-.25,1.2,.45],R0=[.25,1.2,.45];inj(L0,R0,1,0);inj(L0,R0,0,0);for(let i=0;i<200;i++)inj(L0,R0);S.drain();return{S,inj,L0,R0}};
 const ks=S=>S.drain().map(e=>e.k+(e.b?':'+e.b:'')).filter(k=>!k.startsWith('bolt')).join(',');
 // ---- lasso: hold R trigger, spin hand overhead, release → loop flies at enemy
@@ -30,5 +30,5 @@ const ks=S=>S.drain().map(e=>e.k+(e.b?':'+e.b:'')).filter(k=>!k.startsWith('bolt
   console.log('nova →',ks(S),'ch',S._ch,'md',S._md,'alive',S._en.filter(e=>e._st!=5).length);
   for(let i=0;i<90;i++)inj(L0,R0);console.log('after',S._md,S._en.length);}
 // ---- idle: how long to die
-{const S=createSim(2);const inj=(lt)=>{S.inject({p:[-.3,1.2,.3],q:[0,1,0,0],t:lt,g:0},{p:[.3,1.2,.3],q:[0,1,0,0],t:0,g:0},H);S.step()};inj(1);inj(0);
+{const S=createSim(2);const inj=(lt)=>{S.inject({p:[-.3,1.2,.3],f:[0,0,1],t:lt,g:0},{p:[.3,1.2,.3],f:[0,0,1],t:0,g:0},H);S.step()};inj(1);inj(0);
   let t=0;while(S._ws!=3&&t<300){inj(0);t+=DT}console.log('idle died at',t.toFixed(1),'wave',S._wave,'light',S._light);}
