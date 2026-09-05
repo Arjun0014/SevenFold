@@ -1,6 +1,6 @@
 // input.js — desktop controls and XR controller state → sim hand state in ARENA space.
 // Arena: player origin, yaw 0 => forward +z. Head space: x right, y up, z forward.
-import {sin,cos,PI,min,clamp,add,qrot,atan2} from './vec.js';
+import {sin,cos,PI,min,clamp,add,atan2} from './vec.js';
 import {xrS} from './xr.js';
 
 export const inpO={x:0,z:0,y:0};      // arena origin in world space (x,z) and yaw (XR recentre)
@@ -12,10 +12,11 @@ const inpGens=[
   u=>{const a=u*6.6;return[[sin(a)*.2-.1,-.3+cos(a)*.2,.5],[sin(a)*.2+.1,-.3+cos(a)*.2,.5],u<.96?1:0]},
   u=>{const x=-.15+.5*u;return[[-x,-.3,.5],[x,-.3,.5],u<.96?1:0]},
   u=>{const y=-.3+(u<.5?u*2:2-u*2)*.5;return[[-.1,y,.5],[.1,y,.5],u<.96?1:0]}];
+export const inpReset=()=>{inpHL.splice(0,3,-.36,-.35,.6);inpHR.splice(0,3,.36,-.35,.6);inpXo=[0,0,0];inpYaw=inpPit=0}; //@test
 export const inpKeys={};             // one-shot keys read by main: r (restart) m (mute)
 export const inpMacro=k=>{if(!inpMac&&k>=1&&k<=3){inpMac=k;inpMacT=0}};
 const inpHS=(p,y,o)=>[o[0]-cos(y)*p[0]+sin(y)*p[2],o[1]+p[1],o[2]+sin(y)*p[0]+cos(y)*p[2]]; // head space → arena around head o with yaw y
-const inpFw=q=>qrot([q.x,q.y,q.z,q.w],[0,0,-1]); // a Three quaternion's forward (-z)
+const inpFw=q=>[-2*(q.x*q.z+q.w*q.y),-2*(q.y*q.z-q.w*q.x),2*(q.x*q.x+q.y*q.y)-1]; // a Three quaternion's forward (-z)
 let inpLast={L:{p:[-.3,1.2,.3],f:[0,0,1],t:0,g:0},R:{p:[.3,1.2,.3],f:[0,0,1],t:0,g:0}}; // last XR hand poses (frozen on disconnect)
 
 export function inpInit(cv){

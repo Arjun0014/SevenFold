@@ -6,7 +6,7 @@ export async function xrInit(renderer,btn,onStart,onEnd){
   for(let i=0;i<2;i++){const c=renderer.xr.getController(i),h={g:renderer.xr.getControllerGrip(i),hand:'none',on:0,t:0,q:0,src:0};xrS.h.push(h);
     const on=(k,f)=>c.addEventListener(k,f);
     on('connected',e=>{h.on=1;h.src=e.data;h.hand=e.data.handedness;if(e.data.hand)xrS.ht=1});
-    on('disconnected',()=>{h.on=0});   // pose freezes at its last value (input.js)
+    on('disconnected',()=>{h.on=h.t=h.q=0}); // pose freezes at its last value (input.js); a select/squeeze held at the switch (pinch → controller) must not stay held
     on('selectstart',()=>h.t=1);on('selectend',()=>h.t=0);on('squeezestart',()=>h.q=1);on('squeezeend',()=>h.q=0)}
   btn.onclick=async()=>{btn.hidden=true;onStart();if(!xrS.sup)return;
     try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','hand-tracking']});

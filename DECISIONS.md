@@ -396,3 +396,49 @@ cut ... write proper test scripts."
   zeroes the whole instance-colour array (−2 bytes zipped). `tools/wobble.mjs`
   traverses the dev scene and fails if any world-shader instance has a
   non-zero blue channel; pre-fix it reported 45/46 trees and 7/8 stones.
+
+## Final round: teaching, test build, Firefox (session 2026-09-05)
+
+- **In-game teaching.** The user asked whether a new player would know how to
+  perform each weapon and sigil. The old panel had one short line for waves 1–4
+  and 6 and nothing for the Nova, the whip, the slam or the Sovereign. The panel
+  now draws a title and up to two hint lines (`|`-separated, 38 px serif on the
+  1024×256 canvas; every line measured under 720 px, the title at 90 px so
+  "The last colour is gone" fits with margin on Android's wider serif). One
+  lesson per wave in the order the player needs it: arch + boomerang, colour
+  matching with red-left/violet-right, block, lasso + yank, the Herald, Nova by
+  clap, the grips + circle/cross sigils, the slam, the whip, the Sovereign. The
+  `ready` event switches the panel to "Nova ready / Clap the arch together."
+  until the Nova fires. The desktop legend names each key's verb.
+- **Paying for it (about 330 bytes over at first).** Hint wording tightened;
+  the event→burst table replaces the if-chain; the `window.SF` hooks, the event
+  log and the replay recorder are now `//@test` lines, stripped from the zip
+  and kept in `dist/test.html` (`build.js --test`), which the browser suite
+  uses for everything that reads `SF`; the shipped zip itself is exercised
+  hook-free (boot, key play, offline, XR enter/exit) and the suite asserts
+  `window.SF` is absent from it. Three's blending/side enums became their
+  numeric values (r185 is pinned by the host), the head's forward vector is
+  the rotation matrix's third column instead of a generic quaternion rotate,
+  the pitch pivot in `place` is one rotation with a computed translation, the
+  dead fog-colour variable went, shader newlines went, the offline message is
+  shorter. Roadroller level 3 was measured at 8 bytes *larger* than level 2, so
+  level 2 stays. Zip: 13,267 bytes (45 under the limit).
+- **Firefox.** Playwright's Firefox cannot spawn on this machine, but the
+  system Firefox 155 can be driven headless over WebDriver BiDi with a
+  40-line client (`tools/firefox.mjs`, no dependencies): the zip boots, plays
+  with the keys, and the test build's Space/B/G/N fire throw, arch, lasso and
+  Nova, with the console watched for errors.
+- **Audit additions** (`tools/controls.mjs`, 74 checks): the hint panel in the
+  headset, game over by gore in VR, a trigger during the 3 s lock is ignored,
+  a trigger after it restarts at wave 1, Dawn then a trigger restarts, and the
+  controllers drive the hands again after a hand-tracking spell. The audit
+  must not clear the herd between frames before a gore test: an empty herd
+  ends the wave and gores are ignored between waves.
+- **Stuck triggers after a hand-tracking switch (real-device bug, found by the
+  audit).** A pinch sets the slot's select flag; when the hand source
+  disconnects (the player picks the controllers up) the same slot object is
+  reused by the controller with the flag still 1, so both triggers stayed
+  "held" until the player pressed and released them — the rope stuck as an
+  arch, sigils could not forge, and a later trigger edge restarted the game.
+  `disconnected` now clears select and squeeze with the connected flag (+6
+  bytes). The audit checks "no stuck triggers after the switch".

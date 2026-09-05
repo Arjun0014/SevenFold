@@ -10,7 +10,7 @@ const browser=await(bn=='firefox'?firefox:chromium).launch({args:bn=='firefox'?[
 const page=await browser.newPage({viewport:{width:1100,height:640}});
 const errors=[];page.on('console',m=>{if(m.type()=='error'||m.type()=='warning')errors.push(m.type()+': '+m.text())});page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
 await page.route('https://play.js13kgames.com/2026/webxr/three.js',r=>r.fulfill({path:'tools/three-hosted-r185.js',contentType:'text/javascript'}));
-await page.goto(`http://localhost:8089/${which=='dist'?'dist/':''}`);
+await page.goto(`http://localhost:8089/${which=='dist'?'dist/test.html':''}`);
 await page.waitForSelector('#b',{timeout:15000}).catch(()=>{});
 console.log('button:',await page.textContent('#b').catch(()=>'(none)'));
 await page.click('#b').catch(()=>{});

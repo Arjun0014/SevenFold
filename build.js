@@ -8,9 +8,9 @@ import {deflateRawSync} from 'node:zlib';
 import {execSync} from 'node:child_process';
 
 const argv=process.argv.slice(2),opt=(k,d)=>{const i=argv.indexOf(k);return i<0?d:argv[i+1]};
-const LEVEL=+opt('--level',1),ROLL=!argv.includes('--no-roll'),ITER=+opt('--iter',60),LIMIT=13312,TARGET=12900;
-// lines tagged //@test are test hooks stripped from the build
-const OPT=[];
+const LEVEL=+opt('--level',1),ROLL=!argv.includes('--no-roll'),ITER=+opt('--iter',60),LIMIT=13312,TARGET=12900,TEST=argv.includes('--test');
+// lines tagged //@test are test hooks (window.SF, hashState) stripped from the shipped build; --test keeps them and writes dist/test.html (no zip, no gate)
+const OPT=TEST?['test']:[];
 const ORDER=['vec','sim','input','xr','audio','render','main'];
 mkdirSync('dist',{recursive:true});
 
@@ -37,10 +37,11 @@ writeFileSync('dist/bundle.rolled.js',rolled);
 // 4. inline
 const css='body{margin:0;background:#0c1018;color:#cfc8e8;font:13px serif;overflow:hidden}canvas{display:block}#b{position:fixed;left:50%;top:64%;transform:translate(-50%,-50%);font:bold 26px serif;padding:18px 44px;background:#0c1018;color:#e8e2ff;border:1px solid #8a6cff}#h{position:fixed;left:8px;bottom:8px;opacity:.5}#u{position:fixed;top:40%;width:100%;text-align:center;font-size:20px}';
 const html=`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Sevenfold</title><style>${css}</style><div id=u></div><script>U="https://play.js13kgames.com/2026/webxr/three.js";${rolled}</script>`;
-writeFileSync('dist/index.html',html);
+writeFileSync(TEST?'dist/test.html':'dist/index.html',html);
 const urls=html.match(/https?:\/\/[^"' ]*/g)||[];
 if(urls.length!=1||!urls[0].startsWith('https://play.js13kgames.com/2026/webxr/three.js')){console.error('FAIL: unexpected URLs',urls);process.exit(1)}
 if(/localStorage\.clear|console\./.test(html)){console.error('FAIL: localStorage.clear or console. in build');process.exit(1)}
+if(TEST){console.log(`test build dist/test.html (hooks kept): raw ${raw.length}  min ${min.length}  rolled ${rolled.length}  html ${html.length}`);process.exit(0)}
 
 // 5. zip (single entry, hand-rolled container; zopfli deflate, zlib fallback)
 const crcT=new Int32Array(256).map((_,n)=>{let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;return c});

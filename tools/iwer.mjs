@@ -16,7 +16,7 @@ await page.addInitScript({content:readFileSync('node_modules/iwer/build/iwer.js'
 d.position.set(0,1.6,0);d.controllers.left.position.set(-.25,1.2,-.4);d.controllers.right.position.set(.25,1.2,-.4);
 window.__anim=(fn,dur)=>new Promise(res=>{const t0=performance.now();const f=()=>{const u=Math.min(1,(performance.now()-t0)/dur);fn(u);if(u<1)requestAnimationFrame(f);else res()};f()});
 window.__btn=(h,id,v)=>d.controllers[h].updateButtonValue(id,v);})();`});
-await page.goto(`http://localhost:8097/${which=='dist'?'dist/':''}`);await page.waitForFunction(()=>window.SF,{timeout:20000});
+await page.goto(`http://localhost:8097/${which=='dist'?'dist/test.html':''}`);await page.waitForFunction(()=>window.SF,{timeout:20000});
 const log=(...a)=>console.log(...a);const st=()=>page.evaluate(()=>{const s=SF.state();return{xr:s.xr,ws:s.ws,wave:s.wave,mode:s.mode,light:s.light,calls:s.calls,tris:s.tris,ev:s.events.slice(-14).join(',')}});
 const shot=n=>page.screenshot({path:`test-results/iwer-${n}.png`});
 log('button:',await page.textContent('#b'));

@@ -56,6 +56,8 @@ super-human), and uses the same `inject(handState)` API as the desktop input.
 
 ## B. `test/browser.test.js` — Playwright, chromium + firefox
 
+(2026-09-05: the suite runs the unzipped zip *without* hooks — boot, key play, offline, XR enter/exit — and `dist/test.html`, the same sources with the `//@test` hook lines kept, for everything that reads `window.SF`. Firefox on the build machine is covered by `tools/firefox.mjs` over WebDriver BiDi.)
+
 Serve the **unzipped `dist/sevenfold.zip`** from a temp dir. Launch with WebGL
 enabled in headless (`--use-gl=angle --use-angle=swiftshader
 --enable-unsafe-swiftshader` for chromium; firefox headless has WebGL via software

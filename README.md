@@ -1,7 +1,7 @@
 # SEVENFOLD
 
 A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
-Rainbows*), category **WebXR**. One `index.html`, 13,285 bytes zipped, plus the
+Rainbows*), category **WebXR**. One `index.html`, 13,271 bytes zipped, plus the
 competition's hosted Three.js.
 
 You are a mage holding the last rainbow. The Umbra took the colour out of the
@@ -52,10 +52,13 @@ gone until you kill a giant (+2).
 
 ```bash
 npm install
-node build.js --level 2            # dist/index.html + dist/sevenfold.zip (fails above 13,312 bytes)
+npm run build                      # dist/index.html + dist/sevenfold.zip (fails above 13,312 bytes) and dist/test.html (hooks kept)
 npm run dev                        # http://localhost:8080/ (sources) and /dist/ (the build)
-node test/sim.test.js              # Node: rope, verbs, resonance, bots, determinism (~2 min)
-node test/browser.test.js chromium --xr   # Playwright: built zip, desktop + XR shim
+node test/sim.test.js              # Node: rope, verbs, sigils, resonance, bots, determinism (~2 min)
+node test/browser.test.js chromium --xr   # Playwright: the zip (boot, play, offline, XR enter/exit) + the test build (replay, verbs, hints, XR events)
+node tools/firefox.mjs             # real Firefox (system install, WebDriver BiDi): the zip boots and plays, the test build's verbs fire, zero errors
+node tools/controls.mjs            # every control, desktop and VR (Quest 3 emulation runtime), 73 checks
+node tools/wobble.mjs              # scenery instance colours are zero (the r185 instanceColor default would gallop every tree)
 node tools/botrun.mjs 1 8          # perfect bot, seeds 1–8, per-wave clear times
 node tools/iwer.mjs                # the built zip through Meta's WebXR emulation runtime (Quest 3 profile)
 node tools/controls.mjs            # every control, desktop and VR, sigils included: a 65-row pass/fail table
@@ -80,8 +83,9 @@ cross-origin); the built files and the zip are untouched.
   choir of horns (a panned voice per unicorn on a seven-note Phrygian scale that
   turns Lydian at dawn), a bass pulse per wave, and a sound for every event.
 - `src/input.js`, `src/xr.js`, `src/main.js` — desktop controls and macros,
-  hand-written WebXR bootstrap (no XRButton), the loop and the `window.SF` test
-  hook. `build.js` — concat → terser → Roadroller → inline → zopfli zip → size gate.
+  hand-written WebXR bootstrap (no XRButton) and the loop. The `window.SF` test
+  hooks are `//@test` lines: kept in `dist/test.html` (`build.js --test`),
+  stripped from the shipped zip. `build.js` — concat → terser → Roadroller → inline → zopfli zip → size gate.
 - `test/` — the sim suite with the scripted bots, the Playwright suite, the fake
   `navigator.xr` shim, the recorded bot replay.
 

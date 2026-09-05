@@ -92,7 +92,7 @@ R                     restart      M  mute      F  fullscreen
 Hands are drawn as small glowing spheres in desktop mode. Canned sigils exist so
 desktop players (and judges without a headset) can see every weapon.
 
-A **script hook** `window.SF = { sim, inject(handState), step(n), state() }` is
+A **script hook** `window.SF = { sim, inject(handState), step(n), state(), wave(n), ev(k), dawn() }` (a `//@test` line: only in `dist/test.html`, never in the zip) is
 exposed always (tiny) so Playwright and the recorder can drive it.
 
 ## Frame loop (main.js)

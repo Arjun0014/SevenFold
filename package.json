@@ -6,11 +6,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node build.js --level 2 --iter 200",
-    "test": "node test/sim.test.js && node test/browser.test.js",
+    "build": "node build.js --level 2 --iter 200 && node build.js --test --level 0",
+    "test": "node test/sim.test.js && node test/browser.test.js chromium --xr",
     "test:sim": "node test/sim.test.js",
     "test:browser": "node test/browser.test.js",
-    "dev": "node tools/serve.cjs"
+    "dev": "node tools/serve.cjs",
+    "build:test": "node build.js --test --level 0"
   },
   "keywords": [],
   "author": "",

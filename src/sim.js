@@ -5,7 +5,7 @@
 //   3 boomerang in flight (hands empty)  4 nova collapse (arch clapped together with a full charge)
 // Sigils: hold both grips (squeeze) — time slows and the rainbow turns white — draw with the hands, let go:
 //   circle → the boomerang launches ahead, cross → the lasso is cast ahead, raise-and-slam → Nova (if charged).
-import {sin,cos,abs,min,max,hypot,PI,atan2,floor,add,sub,mul,dot,cross,len,dist,norm,lerp,clamp} from './vec.js';
+import {sin,cos,abs,min,max,hypot,PI,atan2,floor,add,sub,mul,dot,len,dist,norm,lerp,clamp} from './vec.js';
 
 export const DT=1/90,N=28,SEG=.9/N;
 // variants: hp, speed, scale, gore damage, rear time. 0 stalker 1 charger 2 brute 3 herald 4 sovereign
@@ -111,7 +111,7 @@ const modes=()=>{
 // rise then drop of the midpoint, hands ever crossed; resolved on release: 1 circle, 2 cross, 3 raise-and-slam
 const forge=()=>{const G=S._fg,L=S._L,R=S._R,both=L.g&&R.g,m=mid();
   if(!G.on){if(G.cd>0)G.cd-=DT;else if(both&&S._md<2&&S._ws>0&&S._ws<3){G.on=1;G.t=G.pa=G.tu=G.ri=G.dr=G.cr=G.pv=G.pm=0;G.y0=G.ym=m[1];ev('forge',m)}return}
-  const f=fwd(),rt=norm(cross(f,[0,1,0])),D=sub(R.p,L.p),q=[dot(m,rt),m[1],0];G.t+=DT; // rt: the head's right (forward × up)
+  const f=fwd(),rt=norm([-f[2],0,f[0]]),D=sub(R.p,L.p),q=[dot(m,rt),m[1],0];G.t+=DT; // rt: the head's right (forward × up)
   if(G.pm){const v=sub(q,G.pm);G.pa+=len(v);if(G.pv)G.tu+=atan2(v[0]*G.pv[1]-v[1]*G.pv[0],v[0]*G.pv[0]+v[1]*G.pv[1]);G.pv=v}G.pm=q;
   if(dot(D,rt)<-.05)G.cr=1;if(m[1]-G.y0>G.ri){G.ri=m[1]-G.y0;G.ym=m[1]}G.dr=max(G.dr,G.ym-m[1]);
   if(both&&G.t<2.5)return;G.on=0;G.cd=.5;const d1=len(D),k=G.cr&&d1>.5?2:abs(G.tu)>4.5&&G.pa>.6?1:G.ri>.3&&G.dr>.3&&d1<.4?3:0;ev(k?'sigil':'unforge',m,0,k);

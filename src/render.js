@@ -5,10 +5,10 @@ import {N,hd} from './sim.js';
 
 export const COLS=[0xff2a3c,0xff8c1a,0xffe14a,0x3ee07a,0x2fa8ff,0x6a5cff,0xd054ff];
 export const rdM={text:''};
-let rdPa,rdPb,rdPx,rdRb,rdRg,rdRr,rdTp,rdT,rdScene,rdCam,rdWorld,rdFog,rdU,rdCol,rdM4,rdV,rdQ,rdS,rdUp,rdCtx,rdTex,rdRope,rdGlow,rdEn,rdBolt,rdBoltT=0,rdFl=0,rdCue,rdCueT=0,rdRing,rdRingT=0,rdHurt=0,rdNova=0,rdBu,rdBi=0,rdBuA,rdLoop,rdHand=[],rdFogC,rdFar=36,rdDawn=0,rdBoss=0;
+let rdPx,rdRb,rdRg,rdRr,rdTp,rdT,rdScene,rdCam,rdWorld,rdFog,rdU,rdCol,rdM4,rdV,rdQ,rdS,rdUp,rdCtx,rdTex,rdRope,rdGlow,rdEn,rdBolt,rdBoltT=0,rdFl=0,rdCue,rdCueT=0,rdRing,rdRingT=0,rdHurt=0,rdNova=0,rdBu,rdBi=0,rdBuA,rdLoop,rdHand=[],rdFar=36,rdDawn=0,rdBoss=0;
 const rdC=c=>new rdT.Color(c),rdX=c=>new rdT.Color().setHex(c,'srgb-linear'); // rdX: raw display values for our own shaders (they write output space directly)
 const sm=(vs,fs,u,o)=>new rdT.ShaderMaterial({uniforms:u,vertexShader:vs,fragmentShader:fs,...o});
-const bas=(c,o=1,ad=0)=>new rdT.MeshBasicMaterial({color:c,transparent:o<1||!!ad,opacity:o,blending:ad?rdT.AdditiveBlending:rdT.NormalBlending,depthWrite:!ad,fog:false});
+const bas=(c,o=1,ad=0)=>new rdT.MeshBasicMaterial({color:c,transparent:o<1||!!ad,opacity:o,blending:ad?2:1,depthWrite:!ad,fog:false});
 const mesh=(g,m,par,x=0,y=0,z=0)=>{const o=new rdT.Mesh(g,m);o.position.set(x,y,z);(par||rdWorld).add(o);return o};
 // merge [geo,x,y,z,sx,sy,sz,rx,ry,rz,e] into one non-indexed geometry with an emissive flag attribute e (no addons)
 const merge=L=>{const P=[],Nn=[],E=[],m=new rdT.Matrix4,eu=new rdT.Euler,q=new rdT.Quaternion,v=new rdT.Vector3,s=new rdT.Vector3;
@@ -18,55 +18,39 @@ const withE=g=>{g.setAttribute('e',new rdT.Float32BufferAttribute(new Float32Arr
 const withS=(g,f)=>{const p=g.attributes.position,u=g.attributes.uv;for(let i=0;i<p.count;i++)u.setX(i,f(p.getX(i),p.getY(i),p.getZ(i)));return g};
 const inst=(g,m,n,par)=>{const o=new rdT.InstancedMesh(g,m,n);o.frustumCulled=false;(par||rdWorld).add(o);rdM4.makeScale(0,0,0);for(let i=0;i<n;i++)o.setMatrixAt(i,rdM4);o.setColorAt(0,rdC(0)).instanceColor.array.fill(0);return o}; // r185 fills instanceColor with 1: blue=1 would gallop every tree and stone
 const place=(o,i,p,yaw,s,pitch)=>{rdM4.compose(rdV.set(p[0],p[1],p[2]),rdQ.setFromAxisAngle(rdUp,yaw||0),rdS.set(s,s,s));
-  if(pitch)rdM4.multiply(rdPa).multiply(rdPx.makeRotationX(pitch)).multiply(rdPb);o.setMatrixAt(i,rdM4)};
+  if(pitch)rdM4.multiply(rdPx.makeRotationX(pitch).setPosition(0,-.32*sin(pitch),.32*(cos(pitch)-1)));o.setMatrixAt(i,rdM4)};
 const flush=o=>{o.instanceMatrix.needsUpdate=true;o.instanceColor.needsUpdate=true};
 const rnd=Math.random,jit=(p,y,r)=>[p[0]+(rnd()-.5)*r,y,p[2]+(rnd()-.5)*r];
 // ---- particles: GPU-aged bursts (position, velocity, birth/life, colour); the CPU only writes new ones
 export const burst=(p,c,n,sp,up=0,life=.8)=>{const A=rdBuA,k=rdCol[c];for(let j=0;j<n;j++){const i=rdBi=(rdBi+1)%900;A.p.setXYZ(i,p[0],p[1],p[2]);A.v.setXYZ(i,(rnd()-.5)*sp,(rnd()-.5)*sp+up,(rnd()-.5)*sp);A.b.setXY(i,rdU.t.value,life*(.6+rnd()*.8));A.c.setXYZ(i,k.r,k.g,k.b)}for(const a in A)A[a].needsUpdate=true};
 const bolt=(a,b,r)=>{const P=[];for(let i=0;i<=16;i++){const s=i/16,j=(1-s)*r;P.push(new rdT.Vector3(a[0]+(b[0]-a[0])*s+(rnd()-.5)*j,a[1]+(b[1]-a[1])*s,a[2]+(b[2]-a[2])*s+(rnd()-.5)*j))}
   rdBolt.geometry.dispose();rdBolt.geometry=new rdT.TubeGeometry(new rdT.CatmullRomCurve3(P,false,'catmullrom',0),48,r*.03+.03,4);rdBolt.visible=true;rdBoltT=.22;rdFl=1;rdU.bd.value.set(b[0],14,b[2]).normalize()};
-const rdSetText=(a,b)=>{const k=a+'\n'+(b||'');if(k==rdM.text)return;rdM.text=k;const c=rdCtx;c.clearRect(0,0,1024,256);c.fillStyle='#e8e2ff';c.textAlign='center';
-  c.font='bold 100px serif';c.fillText(a,512,b?118:150);c.font='42px serif';if(b)c.fillText(b,512,205);rdTex.needsUpdate=true};
+// title line + up to two hint lines ('|' separated) on a 1024×256 canvas
+const rdSetText=(a,b='')=>{const k=a+'\n'+b;if(k==rdM.text)return;rdM.text=k;const c=rdCtx;c.clearRect(0,0,1024,256);c.fillStyle='#e8e2ff';c.textAlign='center';
+  c.font='bold 90px serif';c.fillText(a,512,b?100:150);c.font='38px serif';b.split('|').forEach((l,i)=>c.fillText(l,512,166+i*46));rdTex.needsUpdate=true};
 
 // ---- shaders
 const FOG='uniform vec3 fogColor;uniform float fogNear,fogFar;';
-const W_V=`uniform float t;attribute float e;varying vec3 vn,vw;varying float ve,vd,vb;
-void main(){vec3 p=position,ic=instanceColor;float sc=length(instanceMatrix[0].xyz),ph=ic.g*6.28+t*12./sqrt(sc),a=ic.b;
-if(a>0.){if(p.y<.72){float s=sin(ph+(p.z>0.?0.:3.14)+(p.x>0.?.5:0.))*.4*a;p.z+=(p.y-.75)*s;}}
-vec4 w=modelMatrix*instanceMatrix*vec4(p,1.);vw=w.xyz;vn=normalize(mat3(modelMatrix)*mat3(instanceMatrix)*normal);ve=e;vb=ic.r;
-vec4 mv=viewMatrix*w;vd=-mv.z;gl_Position=projectionMatrix*mv;}`;
-const W_F=`uniform vec3 c[7],lp,bd,lc;uniform float fl,li,dawn;${FOG}varying vec3 vn,vw;varying float ve,vd,vb;
-void main(){vec3 n=normalize(vn),v=normalize(cameraPosition-vw),L=lp-vw;float d=length(L),r=pow(1.-max(dot(n,v),0.),3.);
-vec3 k=mix(vec3(.02,.024,.034),vec3(.1,.07,.08),dawn)+mix(vec3(.045,.05,.075),vec3(.42,.33,.32),dawn)*(.5+.5*n.y)+mix(vec3(.3,.34,.48),vec3(.9,.7,.6),dawn)*r*.38
-+lc*li*max(dot(n,L/d),0.)/(1.+d*d)+fl*vec3(.5,.35,.6)*max(dot(n,bd),0.);
-vec2 cc=floor(vw.xz*12.)+floor(vw.y*12.)*7.;vec3 hh=fract(vec3(cc.x,cc.y,cc.x)*.1031);hh+=dot(hh,hh.yzx+33.33);k*=.88+.2*fract((hh.x+hh.y)*hh.z);
-int b=int(vb*7.);float f=fract(vb*7.);k=mix(k,c[b]*(1.2+f*3.)+f*.5,ve);
-gl_FragColor=vec4(mix(k,fogColor,smoothstep(fogNear,fogFar,vd)),1.);}`;
+const W_V=`uniform float t;attribute float e;varying vec3 vn,vw;varying float ve,vd,vb;void main(){vec3 p=position,ic=instanceColor;float sc=length(instanceMatrix[0].xyz),ph=ic.g*6.28+t*12./sqrt(sc),a=ic.b;if(a>0.&&p.y<.72){float s=sin(ph+(p.z>0.?0.:3.14)+(p.x>0.?.5:0.))*.4*a;p.z+=(p.y-.75)*s;}vec4 w=modelMatrix*instanceMatrix*vec4(p,1.);vw=w.xyz;vn=normalize(mat3(modelMatrix)*mat3(instanceMatrix)*normal);ve=e;vb=ic.r;vec4 mv=viewMatrix*w;vd=-mv.z;gl_Position=projectionMatrix*mv;}`;
+const W_F=`uniform vec3 c[7],lp,bd,lc;uniform float fl,li,dawn;${FOG}varying vec3 vn,vw;varying float ve,vd,vb;void main(){vec3 n=normalize(vn),v=normalize(cameraPosition-vw),L=lp-vw;float d=length(L),r=pow(1.-max(dot(n,v),0.),3.);vec3 k=mix(vec3(.02,.024,.034),vec3(.1,.07,.08),dawn)+mix(vec3(.045,.05,.075),vec3(.42,.33,.32),dawn)*(.5+.5*n.y)+mix(vec3(.3,.34,.48),vec3(.9,.7,.6),dawn)*r*.38+lc*li*max(dot(n,L/d),0.)/(1.+d*d)+fl*vec3(.5,.35,.6)*max(dot(n,bd),0.);vec2 cc=floor(vw.xz*12.)+floor(vw.y*12.)*7.;vec3 hh=fract(vec3(cc.x,cc.y,cc.x)*.1031);hh+=dot(hh,hh.yzx+33.33);k*=.88+.2*fract((hh.x+hh.y)*hh.z);int b=int(vb*7.);float f=fract(vb*7.);k=mix(k,c[b]*(1.2+f*3.)+f*.5,ve);gl_FragColor=vec4(mix(k,fogColor,smoothstep(fogNear,fogFar,vd)),1.);}`;
 const RB_V='varying float v;uniform float w;void main(){v=uv.x;gl_Position=projectionMatrix*modelViewMatrix*vec4(position+normal*w,1.);}';
-const RB_F=`uniform vec3 c[7];uniform float a,n,g,t;varying float v;void main(){float b=v*7.,f=fract(b);int i=int(min(b,6.));
-vec3 k=(float(i)<n?c[i]:vec3(.3,.32,.36))*(.7+.3*min(1.,min(f,1.-f)*10.));k=mix(k,vec3(1.),g*(.35+.25*sin(t*9.)));gl_FragColor=vec4(k,a);}`;
+const RB_F=`uniform vec3 c[7];uniform float a,n,g,t;varying float v;void main(){float b=v*7.,f=fract(b);int i=int(min(b,6.));vec3 k=(float(i)<n?c[i]:vec3(.3,.32,.36))*(.7+.3*min(1.,min(f,1.-f)*10.));k=mix(k,vec3(1.),g*(.35+.25*sin(t*9.)));gl_FragColor=vec4(k,a);}`;
 const SK_V='varying vec3 vp;void main(){vp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
-const SK_F=`uniform vec3 fogColor;uniform float dawn;varying vec3 vp;void main(){vec3 d=normalize(vp);float h=max(d.y,0.);
-vec3 k=mix(mix(fogColor,vec3(.7,.45,.42),dawn),mix(vec3(.008,.01,.02),vec3(.35,.18,.3),dawn),pow(h,.5));
-float m=dot(d,normalize(vec3(.25,.16,1.)));k+=mix(vec3(.45,.08,.12),vec3(1.,.8,.6),dawn)*smoothstep(.99,1.,m);
-gl_FragColor=vec4(k,1.);}`;
-const AS_V=`uniform float t,dawn,ps;varying float va;varying vec3 vc;void main(){vec3 p=position;p.y=mod(p.y-t*.45,14.);p.x+=sin(t*.4+p.z*.6)*1.3;p.z+=cos(t*.3+p.x*.5)*1.3;
-vec4 mv=modelViewMatrix*vec4(p,1.);float z=-mv.z;gl_PointSize=min(ps*(.9+dawn*.6)/z,26.);gl_Position=projectionMatrix*mv;va=(1.-smoothstep(4.,28.,z))*smoothstep(.15,.8,z);
-vc=mix(vec3(.46,.5,.6),.55+.45*cos(6.28*(position.x*.07+position.z*.05+vec3(0,.33,.67))),dawn);}`;
+const SK_F=`uniform vec3 fogColor;uniform float dawn;varying vec3 vp;void main(){vec3 d=normalize(vp);float h=max(d.y,0.);vec3 k=mix(mix(fogColor,vec3(.7,.45,.42),dawn),mix(vec3(.008,.01,.02),vec3(.35,.18,.3),dawn),pow(h,.5));float m=dot(d,normalize(vec3(.25,.16,1.)));k+=mix(vec3(.45,.08,.12),vec3(1.,.8,.6),dawn)*smoothstep(.99,1.,m);gl_FragColor=vec4(k,1.);}`;
+const AS_V=`uniform float t,dawn,ps;varying float va;varying vec3 vc;void main(){vec3 p=position;p.y=mod(p.y-t*.45,14.);p.x+=sin(t*.4+p.z*.6)*1.3;p.z+=cos(t*.3+p.x*.5)*1.3;vec4 mv=modelViewMatrix*vec4(p,1.);float z=-mv.z;gl_PointSize=min(ps*(.9+dawn*.6)/z,26.);gl_Position=projectionMatrix*mv;va=(1.-smoothstep(4.,28.,z))*smoothstep(.15,.8,z);vc=mix(vec3(.46,.5,.6),.55+.45*cos(6.28*(position.x*.07+position.z*.05+vec3(0,.33,.67))),dawn);}`;
 const AS_F='varying float va;varying vec3 vc;void main(){float d=length(gl_PointCoord-.5);gl_FragColor=vec4(vc,va*smoothstep(.5,.15,d)*.65);}';
-const BU_V=`uniform float t,ps;attribute vec3 vel,col;attribute vec2 bl;varying vec4 vc;void main(){float a=t-bl.x,u=a/bl.y;vec3 p=position+vel*a-vec3(0,1.6,0)*a*a;
-vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=u<1.?min(ps*.8*(1.-u*u)/-mv.z,22.):0.;gl_Position=projectionMatrix*mv;vc=vec4(col,1.-u);}`;
+const BU_V=`uniform float t,ps;attribute vec3 vel,col;attribute vec2 bl;varying vec4 vc;void main(){float a=t-bl.x,u=a/bl.y;vec3 p=position+vel*a-vec3(0,1.6,0)*a*a;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=u<1.?min(ps*.8*(1.-u*u)/-mv.z,22.):0.;gl_Position=projectionMatrix*mv;vc=vec4(col,1.-u);}`;
 const BU_F='varying vec4 vc;void main(){float d=length(gl_PointCoord-.5);gl_FragColor=vec4(vc.rgb,vc.a*smoothstep(.5,.1,d));}';
 
 export function rdInit(T_,R){
-  rdT=T_;rdM4=new rdT.Matrix4;rdV=new rdT.Vector3;rdQ=new rdT.Quaternion;rdS=new rdT.Vector3;rdUp=new rdT.Vector3(0,1,0);rdCol=COLS.map(rdX);rdCol.push(rdX(0xffffff),rdX(0x6a7080));rdPa=new rdT.Matrix4().makeTranslation(0,0,-.32);rdPb=new rdT.Matrix4().makeTranslation(0,0,.32);rdPx=new rdT.Matrix4;
-  rdScene=new rdT.Scene;rdWorld=new rdT.Group;rdScene.add(rdWorld);rdFogC=rdC(0x0c1018);
+  rdT=T_;rdM4=new rdT.Matrix4;rdV=new rdT.Vector3;rdQ=new rdT.Quaternion;rdS=new rdT.Vector3;rdUp=new rdT.Vector3(0,1,0);rdCol=COLS.map(rdX);rdCol.push(rdX(0xffffff),rdX(0x6a7080));rdPx=new rdT.Matrix4;
+  rdScene=new rdT.Scene;rdWorld=new rdT.Group;rdScene.add(rdWorld);
   rdFog=rdScene.fog=new rdT.Fog(0x0c1018,5,36);
   rdCam=new rdT.PerspectiveCamera(90,innerWidth/innerHeight,.05,400);rdCam.position.set(0,1.6,0);rdCam.rotation.order='YXZ';rdCam.rotation.y=PI;
   const U=rdU={t:{value:0},fl:{value:0},bd:{value:new rdT.Vector3(0,1,0)},lp:{value:new rdT.Vector3(0,1.2,.3)},li:{value:.7},lc:{value:rdX(0xc8b8ff)},dawn:{value:0},n:{value:7},g:{value:0},c:{value:rdCol},fogColor:{value:new rdT.Color},fogNear:{value:5},fogFar:{value:36},ps:{value:12}};
   const W=sm(W_V,W_F,U,{fog:true}),G=rdT,sph=(r,a=10,b=7)=>new G.SphereGeometry(r,a,b),cyl=(a,b,h,s=6)=>new G.CylinderGeometry(a,b,h,s),cone=(r,h,s=5)=>new G.ConeGeometry(r,h,s);
   // ---- sky (procedural gradient, dead red moon, lightning glow)
-  mesh(sph(180,24,12),sm(SK_V,SK_F,U,{side:rdT.BackSide,depthWrite:false,fog:false}),rdScene).renderOrder=-1;
+  mesh(sph(180,24,12),sm(SK_V,SK_F,U,{side:1,depthWrite:false,fog:false}),rdScene).renderOrder=-1;
   // ---- ground: displaced plane, flat within the circle
   const gr=new G.PlaneGeometry(170,170,60,60).rotateX(-PI/2);{const p=gr.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),r=hypot(x,z);p.setY(i,(sin(x*.37)*sin(z*.31)*.9+cos(x*.11-z*.19)*1.4)*min(1,max(0,(r-4.5)/6))-.02)}gr.computeVertexNormals()}
   const ground=inst(withE(gr),W,1);rdM4.identity();ground.setMatrixAt(0,rdM4);flush(ground);
@@ -80,7 +64,7 @@ export function rdInit(T_,R){
     [cyl(.045,.035,.76),.15,.38,.32],[cyl(.045,.035,.76),-.15,.38,.32],[cyl(.045,.035,.76),.15,.38,-.3],[cyl(.045,.035,.76),-.15,.38,-.3]]);
   rdEn=inst(uni,W,40);
   // ---- the rainbow: rope tube rebuilt each frame (core + additive glow), lasso loop, nova ring, hands
-  const rb=(w,a,ad)=>sm(RB_V,RB_F,{...U,w:{value:w},a:{value:a}},{transparent:a<1,blending:ad?rdT.AdditiveBlending:rdT.NormalBlending,depthWrite:!ad,side:rdT.DoubleSide});
+  const rb=(w,a,ad)=>sm(RB_V,RB_F,{...U,w:{value:w},a:{value:a}},{transparent:a<1,blending:ad?2:1,depthWrite:!ad,side:2});
   rdRb=rb(0,1);rdRg=rb(.045,.22,1);rdRope=mesh(sph(.01),rdRb);rdGlow=mesh(sph(.01),rdRg);rdRope.frustumCulled=rdGlow.frustumCulled=false;
   rdLoop=mesh(withS(new G.TorusGeometry(.24,.02,5,16),()=>.5),rdRb);rdLoop.visible=false;
   rdRr=rb(0,.9);rdRing=mesh(withS(new G.TorusGeometry(1,.06,6,48),(x,y)=>atan2(y,x)/(2*PI)+.5),rdRr);rdRing.visible=false;
@@ -90,7 +74,7 @@ export function rdInit(T_,R){
   const ash=new G.Points(ag,sm(AS_V,AS_F,U,{transparent:true,depthWrite:false}));ash.frustumCulled=false;rdWorld.add(ash);
   const bg=new G.BufferGeometry;rdBuA={p:new G.BufferAttribute(new Float32Array(2700),3),v:new G.BufferAttribute(new Float32Array(2700),3),b:new G.BufferAttribute(new Float32Array(1800).fill(-9),2),c:new G.BufferAttribute(new Float32Array(2700),3)};
   bg.setAttribute('position',rdBuA.p);bg.setAttribute('vel',rdBuA.v);bg.setAttribute('bl',rdBuA.b);bg.setAttribute('col',rdBuA.c);
-  rdBu=new G.Points(bg,sm(BU_V,BU_F,U,{transparent:true,depthWrite:false,blending:rdT.AdditiveBlending}));rdBu.frustumCulled=false;rdWorld.add(rdBu);
+  rdBu=new G.Points(bg,sm(BU_V,BU_F,U,{transparent:true,depthWrite:false,blending:2}));rdBu.frustumCulled=false;rdWorld.add(rdBu);
   // ---- lightning, cue ring, text
   rdBolt=mesh(sph(.01),bas(0xe8d8ff,.9,1));rdBolt.visible=false;rdBolt.frustumCulled=false;
   rdCue=mesh(new G.RingGeometry(.45,.6,32).rotateX(-PI/2),bas(0xff3060,.9,1),0,0,.02,0);rdCue.visible=false;
@@ -100,28 +84,25 @@ export function rdInit(T_,R){
   rdM.U=U;rdM.W=W;rdM.S=rdScene;rdM.C=rdCam; //@test
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
-const rdHints=[,'Both triggers, swing, let go.','Match the horn colour.','Both triggers block.','One trigger: lasso. Swing, let go, pull.',,'Both grips: circle, cross or slam.'];
+// one lesson per wave (index = wave): arch + boomerang, colour matching, block, lasso, the Herald, Nova, the sigils, whip, the Sovereign
+const rdHints=[,'Both triggers: the arch.|Swing it and let go: the boomerang.','Strike horns with their own colour.|Red is your left, violet your right.','A rearing horn strikes.|Hold both triggers to block.','One trigger: the lasso. Swing, let go.|Caught one? Pull your hand back hard.','Block its charge, then strike.|A slain giant gives two colours back.','Three colour hits turn the rainbow white.|Clap the arch together: Nova.','Both grips slow time. Draw, then let go.|A circle throws. Cross and part: lasso.','Both grips, raise and slam down: Nova.','Flick the loose rope: the whip.','Its horn wears every colour in turn.'];
+// event → burst [colour (empty: the event's band), count, speed, lift, life]
+const rdB={hit:[,6,2.5],res:[,20,4,.5],kill:[,50,3,2,1.4],crack:[,5,3],catch:[7,6,1.5],caught:[,10,2],yank:[,30,5,1],block:[7,10,4,1],stagger:[7,40,4,1],ready:[7,30,2,1],sigil:[7,40,3,1],unforge:[8,15,1.5,.5],spawn:[8,20,1.5,2,1.4],charge:[,25,4,1]};
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
 
 export function rdSync(S,ev,dt,H){
   const U=rdU,L=S._L.p,R=S._R.p,t=U.t.value+=dt,boss=S._en.find(e=>e._boss&&e._st!=5);
   // ---- events → effects / text
-  for(const e of ev){const k=e.k,p=e.p,b=e.b;
-    if(k=='hit')burst(p,b,6,2.5);else if(k=='res')burst(p,b,20,4,.5);
-    else if(k=='kill')burst(p,b,50,3,2,1.4);
-    else if(k=='crack')burst(p,b,5,3);else if(k=='catch')burst(p,7,6,1.5);else if(k=='caught')burst(p,b,10,2);else if(k=='yank')burst(p,b,30,5,1);
-    else if(k=='block'||k=='stagger')burst(p,7,k=='block'?10:40,4,1);
-    else if(k=='nova'){rdNova=.6;rdRing.visible=true;setP(rdRing,[p[0],.9,p[2]]);burst(p,7,30,9,2,1);for(let i=0;i<7;i++)burst(p,i,16,8,1.5,1.2)}
+  for(const e of ev){const k=e.k,p=e.p,b=e.b,B=rdB[k];if(B)burst(p,B[0]??b,...B.slice(1));
+    if(k=='nova'){rdNova=.6;rdRing.visible=true;setP(rdRing,[p[0],.9,p[2]]);burst(p,7,30,9,2,1);for(let i=0;i<7;i++)burst(p,i,16,8,1.5,1.2);rdSetText('')}
     else if(k=='hurt'){rdHurt=.35;burst(S._H.p,8,30,3,1)}
-    else if(k=='ready')burst(p,7,30,2,1);
-    else if(k=='sigil')burst(p,7,40,3,1);else if(k=='unforge')burst(p,8,15,1.5,.5);
-    else if(k=='spawn')burst(p,8,20,1.5,2,1.4);
-    else if(k=='charge'){bolt(p,jit(p,p[1]+5,4),1.5);burst(p,b,25,4,1)}
+    else if(k=='charge')bolt(p,jit(p,p[1]+5,4),1.5);
     else if(k=='cue'){rdCueT=e.d;setP(rdCue,[p[0],.02,p[2]]);rdCue.visible=true}
     else if(k=='strike'){bolt(jit(p,22,3),p,1);burst(jit(p,.3,0),7,40,5,3);rdCue.visible=false}
     else if(k=='bolt')bolt(jit(p,42,8),p,4);
-    else if(k=='wave')rdSetText(e.d==5?'THE HERALD':e.d==10?'THE SOVEREIGN':'Wave '+e.d,e.d==5?'Block the charge, then strike.':rdHints[e.d]||'');
-    else if(k=='clear'||k=='start'||k=='restart')rdSetText('','');
+    else if(k=='wave')rdSetText(e.d==5?'THE HERALD':e.d==10?'THE SOVEREIGN':'Wave '+e.d,rdHints[e.d]);
+    else if(k=='ready')rdSetText('Nova ready','Clap the arch together.');
+    else if(k=='clear'||k=='start'||k=='restart')rdSetText('');
     else if(k=='over')rdSetText('The last colour is gone','Wave '+S._wave+' · Score '+S._score+' · Trigger to retry');
     else if(k=='dawn')rdSetText('Dawn','Trigger to play again');
   }

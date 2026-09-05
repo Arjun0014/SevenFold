@@ -2,73 +2,72 @@
 
 ## 0. Do these by hand before submitting (top item)
 
-**Manual emulator checklist** — the automated tests cover the desktop path in
-Chromium, the WebXR code path through a fake `navigator.xr` (docs/07 C), and a
-full pass through Meta's Immersive Web Emulation Runtime (`node tools/iwer.mjs`:
-the runtime inside the Immersive Web Emulator, Quest 3 profile — session start,
-first-trigger start, arch, throw/hit/catch, lasso/catch/yank, grips as
-triggers, hand-tracking pinches, session end, zero errors). Nothing has run on
-a headset. With Meta's *Immersive Web Emulator* Chrome
-extension (or the WebXR API Emulator):
+Nothing has run on a real headset. Everything below the checklist ran on the
+build machine: desktop Chromium, real Firefox 155, a fake `navigator.xr` shim,
+and Meta's Immersive Web Emulation Runtime (the runtime inside the Immersive
+Web Emulator extension, Quest 3 profile). **Manual headset / emulator
+checklist** (with the *Immersive Web Emulator* Chrome extension, or a Quest):
 
-1. `npm run dev`, open `http://localhost:8080/dist/` in Chrome with the extension.
-   DevTools → WebXR tab, device "Meta Quest 3". (The dev server swaps the hosted
-   Three.js URL for a byte-identical local copy: the host sends no CORS header, so
-   a localhost page cannot import it cross-origin. The zip is untouched and is
+1. `npm run dev`, open `http://localhost:8080/dist/` in Chrome with the extension
+   (DevTools → WebXR tab, device "Meta Quest 3"), or the entry's play page on the
+   headset. (The dev server swaps the hosted Three.js URL for a byte-identical
+   local copy because the host sends no CORS header; the zip is untouched and is
    same-origin on play.js13kgames.com.)
-2. Click ENTER VR. Expect: the dead forest, standing stones, the red moon, ash
-   falling around you, the rainbow hanging between the two controller positions
-   (white rings), lightning now and then with thunder, no console errors. The
-   first trigger pull recentres the arena on your head and starts the game.
-3. Hold both triggers: the rope snaps into a rainbow arch. Swing forward and
-   release: it flies out and returns to your hand (whoosh, catch).
-4. Hold one trigger for a moment: the rope hangs from that hand with a loop.
-   Swing it and let go: the loop flies. Catch a unicorn, pull your hand back
-   sharply: it dies.
+2. ENTER VR. Expect: the dead forest, standing stones, the red moon, ash falling,
+   the rainbow hanging between the two controller positions (white rings),
+   lightning now and then with thunder, the title panel ahead ("SEVENFOLD — Pull
+   a trigger."), no console errors. **The trees and stones stand still** (the
+   width pulse from the r185 instance-colour default is fixed and guarded by
+   `node tools/wobble.mjs`).
+3. The first trigger pull recentres the arena on your head and starts the game.
+   Wave 1's panel reads "Both triggers: the arch. / Swing it and let go: the
+   boomerang." Each wave teaches the next verb (docs/09 table): colour matching,
+   block, lasso, the Herald, Nova, the sigils, the slam, the whip, the Sovereign.
+   When three colour hits charge the Nova the panel switches to "Nova ready".
+4. Hold both triggers: the rope snaps into a rainbow arch. Swing forward and
+   release: it flies out and returns (whoosh, catch). Hold one trigger for a
+   moment: a loop hangs from that hand; swing and let go: it flies; catch a
+   unicorn, pull your hand back sharply: it dies.
 5. Hold both grips: the world slows and the rainbow turns white. Draw a circle
-   and let go: the boomerang launches ahead. Cross your hands and pull apart:
-   the lasso is cast. Raise and slam with a full charge: Nova.
-6. Wave 1: four stalkers. Block one rear-up with the arch (clank, it staggers).
-   Match a horn's colour (red is your left end, violet your right): the chord and
-   the coloured burst mean a resonant hit. Three of those: the rainbow pulses
-   white and a seven-note chime plays. Hold the arch and clap: Nova.
-7. `SF.state()` in the console shows draw calls (`calls`, budget ≤ 60; tests see
-   12) and triangles (`tris`, ~30k).
-8. Press the emulator's exit → the page returns to desktop mode with the
-   PLAY ON DESKTOP / ENTER VR button, no errors.
-9. In the emulator you cannot move a controller and press a button at the same
-   time, so the game remembers a fast swing for half a second: swing the
-   controllers forward quickly in the panel, then release the triggers. The same
-   grace applies to the lasso. The keyboard also works inside the session: WASD/QE
-   nudge both hands, B holds both triggers, V holds both grips, Space/G/N draw the
-   three sigils.
-   There is no locomotion by design: the player never moves; turn the headset to
-   face the herd.
+   and let go: the boomerang launches ahead. Cross your hands and pull apart: the
+   lasso is cast. Raise both hands and slam down with a full charge: Nova.
+6. Wave 1: block one rear-up with the arch (clank, it staggers). Match a horn's
+   colour (red is your left end, violet your right): the chord and coloured burst
+   mean a resonant hit. Three of those: the rainbow pulses white, a seven-note
+   chime, the panel says "Nova ready". Hold the arch and clap: Nova.
+7. Lose all seven colours (or reach Dawn): the panel shows the result; a trigger
+   pull during the first 3 s is ignored, after that it restarts at wave 1.
+8. Press the emulator's exit (or the headset's system menu) → back to desktop
+   mode with the ENTER VR button, no errors. Enter again: a second session works.
+9. Emulator only: you cannot move a controller and press a button at once, so the
+   game remembers a fast swing for half a second — swing the controllers forward
+   quickly in the panel, then release the triggers. The keyboard also works
+   inside the session: WASD/QE nudge both hands, B holds both triggers, V both
+   grips, Space/G/N draw the three sigils. There is no locomotion by design.
 10. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
 
-**Firefox** could not be run on the build machine: Playwright's Firefox binary
-fails to start with a Windows side-by-side error ("Dependent Assembly mozglue …
-could not be found"; a fresh download is byte-identical, so it is the machine,
-not the install). `node test/browser.test.js firefox` runs the same desktop
-tests on any machine where Playwright's Firefox launches — please run it once.
-
 **Sound** could not be heard on the build machine (headless). The synth runs
-without errors for full games in Chromium; please listen to one wave and one
-giant on desktop before submitting and tell me what to change.
+without errors for full games; please listen to one wave and one giant on desktop.
+
+**Hand tracking**: pinch = trigger; bare hands have no grip, so the sigils need
+controllers (the trigger verbs all work with hands).
 
 ## 1. Final size
 
 | step | bytes |
 |---|---|
-| source, concatenated | 46,708 |
-| terser (property-mangled) | 33,327 |
-| roadroller -O2 | 17,066 |
-| index.html (inlined) | 17,672 |
-| **dist/sevenfold.zip** | **13,285** (limit 13,312; margin 27) |
+| source, concatenated | 46,843 |
+| terser (property-mangled) | 32,884 |
+| roadroller -O2 | 17,051 |
+| index.html (inlined) | 17,657 |
+| **dist/sevenfold.zip** | **13,271** (limit 13,312; margin 41) |
 
-The shipping build is `node build.js --level 2 --iter 200` (`npm run build`). Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
-zip by ±15 bytes. `build.js` fails above the limit, so a rebuild can never ship
-an oversized file unnoticed.
+The shipping build is `node build.js --level 2 --iter 200` (`npm run build`
+also writes `dist/test.html`, the same sources with the `//@test` hook lines —
+`window.SF`, `hashState`, the event log — kept; the zip has none of them and
+the browser suite asserts that). Roadroller's optimiser is not perfectly
+deterministic: rebuilding can move the zip by ±15 bytes; level 3 measured 8
+bytes larger. `build.js` fails above the limit.
 
 `unzip -l` → one entry, `index.html`. `unzip -t` → no errors. The only URL in
 the build is `https://play.js13kgames.com/2026/webxr/three.js`. No
@@ -77,43 +76,39 @@ the build is `https://play.js13kgames.com/2026/webxr/three.js`. No
 | module | raw | minified |
 |---|---|---|
 | vec | 1,340 | 821 |
-| sim | 13,079 | 9,346 |
-| input | 3,593 | 2,323 |
-| xr | 1,501 | 1,068 |
-| audio | 6,527 | 4,866 |
-| render | 17,400 | 13,700 |
-| main | 3,245 | 2,590 |
+| sim | 14,500 | 9,932 |
+| input | 3,738 | 2,198 |
+| xr | 1,568 | 1,060 |
+| audio | 6,047 | 4,418 |
+| render | 17,040 | 13,204 |
+| main | 2,588 | 1,954 |
 
 ## 2. What was cut, and what fits
 
 Everything in docs/09 is in the zip: the world, the ash, the lightning, the
-five verbs, the three variants, both giants, ten waves, Dawn, the full synth
-soundtrack. Nothing from the rehaul design was cut. Endless mode and combo
-scoring (priority 7) are not implemented. If bytes are ever needed: the hoof
-ash and the boss mist (≈60 bytes), the ground grain (≈90), the standing stones
-(≈150), then the lasso drag.
+five verbs, the three sigils, the three variants, both giants, ten waves, Dawn,
+the full synth soundtrack, and now a lesson per wave on the panel. Nothing was
+cut; the teaching text was paid for by moving the test hooks to the test build
+and by byte golf (DECISIONS.md, final round). Endless mode and combo scoring
+(priority 5) are not implemented. If bytes are ever needed: the hoof ash and the
+boss mist (≈60 bytes), the ground grain (≈90), the standing stones (≈150).
 
 ## 3. Tests (final build)
 
-| suite | chromium | firefox |
-|---|---|---|
-| boot: title, PLAY ON DESKTOP, zero errors | ok | not run |
-| desktop play: bot replay reaches wave 3 | ok | not run |
-| render budget (12 calls, ~30k tris) | ok | not run |
-| desktop macros: throw / arch / lasso / Nova events | ok | not run |
-| game over text, R restarts at wave 1 | ok | not run |
-| resize | ok | not run |
-| mute persists, best score saved | ok | not run |
-| offline three.js → friendly message | ok | not run |
-| XR shim: enter, 300 frames, throw + catch, exit | ok | n/a |
-| IWER (Immersive Web Emulator runtime, Quest 3): enter, start, arch, throw, lasso, grips, pinches, exit | ok | n/a |
-| `node tools/controls.mjs`: every control, desktop (28 checks) and VR (37 checks), sigils included | 65/65 | n/a |
-| `node test/sim.test.js` (sigils: circle, cross, slam, negatives, timeout, cooldown, slow-motion) | 23/23 | — |
+| suite | result |
+|---|---|
+| `node test/sim.test.js` — rope, whip, arch, block, boomerang, lasso, Nova, circle/cross/slam sigils + negatives, resonance, lives, idle/perfect/no-block bots on seeds 1–5, determinism | 23/23 |
+| `node test/browser.test.js chromium --xr` — **the zip, hook-free**: boot, 8 s of key play, offline message, XR shim enter/select/swing/exit; **the test build**: bot replay to wave 3, budget (12 calls, ~28k tris), every wave's hint + "Nova ready", Space/B/G/N verbs, game over + R, Dawn + trigger, mute/best score, XR shim throw + catch | 13/13, zero console errors |
+| `node tools/firefox.mjs` — real Firefox 155 over WebDriver BiDi: the zip boots and plays with the keys; the test build's Space/B/G/N fire throw, arch, lasso, Nova | 11/11, zero errors (Firefox 155.0.1, headless) |
+| `node tools/iwer.mjs` — Quest 3 emulation runtime: session, first trigger, arch, throw/hit/catch, lasso/catch/yank, drawn circle → forge → sigil → throw, hand-tracking pinches, session end | ok, zero errors, zero warnings |
+| `node tools/controls.mjs` — every control: desktop 28 checks; VR 45 checks incl. head/controller mapping, all verbs, all sigils, hand tracking (and no stuck triggers after switching back to controllers), keyboard assist, the hint panel, game over → 3 s lock → trigger restart, Dawn → trigger restart, session end and re-entry | 73/73, zero errors in both modes |
+| `node tools/soak.mjs` — a full ten-wave browser play-through (the Node bot drives the page) | 3 full games to Dawn in the 7 min window (the bot restarts at Dawn), zero errors, 9–12 draw calls |
+| `node tools/wobble.mjs` — no scenery instance has a non-zero blue channel (the gallop input) | ok |
 
-Perfect-bot clear times (seconds, seeds 1–8): waves 11–12, 15–16, 19–21, 18–20,
-**Herald 16–50**, 21–24, 19, 27–30, 31–33, **Sovereign ~60**. Every seed reaches
-Dawn with all seven colours; the idle bot loses everything in 25 s; the
-no-block bot dies to the Sovereign.
+Perfect-bot clear times (seconds, seeds 1–5): waves 11–12, 15–16, 20–21, 19–20,
+**Herald 16–47**, 22–26, 19–21, 27–29, 30–36, **Sovereign 57–117**. Every seed
+reaches Dawn with all seven colours; the idle bot loses everything within 60 s;
+the no-block bot dies to the Sovereign.
 
 ## 4. Submission form
 
@@ -129,10 +124,11 @@ no-block bot dies to the Sovereign.
 ## 5. WebXR category checklist
 
 - [x] Only external resource: the hosted Three.js (dynamic `import(U)`); no addons, XRButton, fonts, images, audio files.
-- [x] `requestSession('immersive-vr')` from a user gesture only; `local-floor`; `setFoveation(1)`; session end returns to desktop mode.
-- [x] Input: head pose, two grip poses, select (trigger / pinch) and squeeze (grip, treated as trigger). No thumbsticks, no buttons.
+- [x] `requestSession('immersive-vr')` from a user gesture only; `local-floor` (optional feature, falls back to `local`); `setFoveation(1)`; session end returns to desktop mode; a second session works.
+- [x] Input: head pose, two grip poses, select (trigger / pinch) and squeeze (grip, the forge). No thumbsticks, no buttons.
 - [x] The player never moves and is never moved; everything comes to the player.
-- [x] Zero console errors in Chromium desktop and through the XR shim; Firefox to be confirmed by hand.
-- [x] Budget: 12 draw calls, ~30k triangles, 8 transparent meshes, one fog, no shadows, no post-processing.
+- [x] Zero console errors in Chromium (desktop, XR shim, emulation runtime) and in real Firefox 155.
+- [x] Budget: 12 draw calls desktop / 24 in stereo, ~28k / 56k triangles, 8 transparent meshes, one fog, no shadows, no post-processing.
 - [x] `localStorage` keys `sevenfold_mute`, `sevenfold_best`; never cleared.
 - [x] Original content; no copyrighted names.
+- [x] Every verb and sigil is taught in-game, one lesson per wave, plus the desktop key legend.

@@ -14,8 +14,11 @@ your hands. The Umbra sends its own herd against you — hollow, ash-black unico
 each with one burning horn in one of the seven colours. Survive ten waves and two
 giants until dawn, when colour comes back.
 
-Shown as: the title, one sentence, "Pull a trigger". No tutorial screens; one
-hint line per wave.
+Shown as: the title, one sentence, "Pull a trigger". No tutorial screens; a
+title line and up to two hint lines per wave on the panel 3.2 m ahead, one
+lesson per wave in the order the player needs them (below). The first time the
+Nova charges, the panel switches to "Nova ready / Clap the arch together." until
+the Nova fires or the wave clears.
 
 ## The player
 
@@ -87,16 +90,17 @@ death is Dawn.
 
 | wave | composition | hint |
 |---|---|---|
-| 1 | 4 stalkers, ±40° | Hold both triggers. Swing. Let go. |
-| 2 | 6 stalkers, ±70° | Match a horn's colour to shatter it. |
-| 3 | 5 stalkers + 3 chargers, ±100° | Hold both triggers to block a charge. |
-| 4 | 4 stalkers + 3 chargers + 1 brute, ±140° | One trigger: swing the lasso. Let go. Pull. |
-| 5 | **The Herald** | Block the charge. Strike while it reels. |
-| 6 | 8 stalkers + 2 brutes, 360° | Three colour hits: clap the rainbow. |
-| 7 | 4 stalkers + 6 chargers, 360° | Chargers come from the dark. Block, then strike. |
-| 8 | 6 stalkers + 3 chargers + 3 brutes, 360° | |
-| 9 | 10 stalkers + 6 chargers + 2 brutes, 360° | |
-| 10 | **The Sovereign** | Its horn wears every colour. |
+| 1 | 4 stalkers, ±40° | Both triggers: the arch. / Swing it and let go: the boomerang. |
+| 2 | 6 stalkers, ±70° | Strike horns with their own colour. / Red is your left, violet your right. |
+| 3 | 5 stalkers + 3 chargers, ±100° | A rearing horn strikes. / Hold both triggers to block. |
+| 4 | 4 stalkers + 3 chargers + 1 brute, ±140° | One trigger: the lasso. Swing, let go. / Caught one? Pull your hand back hard. |
+| 5 | **The Herald** | Block its charge, then strike. / A slain giant gives two colours back. |
+| 6 | 8 stalkers + 2 brutes, 360° | Three colour hits turn the rainbow white. / Clap the arch together: Nova. |
+| 7 | 4 stalkers + 6 chargers, 360° | Both grips slow time. Draw, then let go. / A circle throws. Cross and part: lasso. |
+| 8 | 6 stalkers + 3 chargers + 3 brutes, 360° | Both grips, raise and slam down: Nova. |
+| 9 | 10 stalkers + 6 chargers + 2 brutes, 360° | Flick the loose rope: the whip. |
+| 10 | **The Sovereign** | Its horn wears every colour in turn. |
+| any | Nova charged | Nova ready / Clap the arch together. |
 
 Dawn after the Sovereign; trigger to play again.
 

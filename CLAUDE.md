@@ -77,11 +77,13 @@ Library: **Three.js r185 ESM, hosted by js13kGames** at
       block, boomerang, lasso, Nova), resonance and greyed colours, seven lives, the
       giant reward, idle bot dies, perfect bot reaches Dawn on seeds 1–5 with the
       per-wave time windows, no-block bot fails, determinism hash check.
-- [ ] `node test/browser.test.js` passes in **chromium and firefox**: the built,
-      unzipped `index.html` boots in desktop mode with zero console errors; the bot
-      replay reaches wave 3; the desktop macros produce throw/arch/lasso/Nova events;
-      game over + restart; renderer stats within budget; XR entry/exit through the
-      shim (chromium) with a throw and catch, zero errors.
+- [ ] `node test/browser.test.js chromium --xr` passes: the built, unzipped
+      `index.html` (no hooks) boots in desktop mode with zero console errors, plays
+      with the keys, shows the offline message, enters and exits XR through the
+      shim; `dist/test.html` (`build.js --test`, hooks kept): the bot replay
+      reaches wave 3, the desktop macros produce throw/arch/lasso/Nova events, every
+      wave shows its hint, game over + restart, Dawn + restart, renderer stats within
+      budget, XR throw and catch. `node tools/firefox.mjs` passes in real Firefox.
 - [ ] `node build.js` emits `dist/index.html` and `dist/sevenfold.zip`, prints size
       breakdown, fails above 13,312 bytes.
 - [ ] `unzip -l dist/sevenfold.zip` shows only `index.html`; `unzip -t` OK.

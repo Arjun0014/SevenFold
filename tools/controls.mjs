@@ -22,8 +22,7 @@ const mk=async(xr)=>{const page=await browser.newPage({viewport:{width:900,heigh
   const clearEn=()=>page.evaluate(()=>{SF.sim._en=[];SF.sim._q=[]});
   const wait=ms=>page.waitForTimeout(ms);
   const holdUntil=async(key,cond,arg,ms=2500)=>{await page.keyboard.down(key);const ok=await page.waitForFunction(cond,arg,{timeout:ms}).then(()=>true).catch(()=>false);await page.keyboard.up(key);return ok};
-  const settle=async()=>{await page.evaluate(()=>{SF.sim._light=7;SF.sim._inv=0});await page.waitForFunction(()=>SF.sim._md==0&&!SF.sim._fg.on,null,{timeout:6000}).catch(()=>{});await wait(400);if(!xr){ // desktop: walk the hands back to their default offsets
-    for(const[ax,def,neg,pos]of[[0,-.36,'KeyD','KeyA'],[1,1.25,'KeyQ','KeyE'],[2,.6,'KeyS','KeyW']]){const v=(await S()).R[ax];if(Math.abs(v-def)>.06)await holdUntil(v>def?neg:pos,([ax,def])=>Math.abs(SF.sim._R.p[ax]-def)<.05,[ax,def],1500)}await wait(300)}};
+  const settle=async()=>{await page.evaluate(()=>{SF.sim._light=7;SF.sim._inv=0});await page.waitForFunction(()=>SF.sim._md==0&&!SF.sim._fg.on,null,{timeout:6000}).catch(()=>{});await wait(400);if(!xr){await page.evaluate(()=>SF.reset());await wait(300)}}; // desktop: hands (and mouse look) back to their defaults deterministically — a key walk at software-render frame rates overshoots
   return{page,errors,S,mark,since,place,clearEn,wait,holdUntil,settle}};
 
 // =============================== DESKTOP ===============================
@@ -39,7 +38,7 @@ const mk=async(xr)=>{const page=await browser.newPage({viewport:{width:900,heigh
   for(const[key,axis,sign,name]of[['KeyW',2,1,'W: hands forward (reach clamps at 1 m)'],['KeyS',2,-1,'S: hands back'],['KeyA',0,1,'A: hands left'],['KeyD',0,-1,'D: hands right'],['KeyE',1,1,'E: hands up'],['KeyQ',1,-1,'Q: hands down']]){
     await settle();const a=(await S()).R;await holdUntil(key,([ax,sg,a0])=>(SF.sim._R.p[ax]-a0)*sg>.3,[axis,sign,a[axis]]);
     const b=(await S()).R;const d=(b[axis]-a[axis])*sign;check(M,name,'right hand moves ≥ 0.2 m that way',d>.2,`Δ=${d.toFixed(2)} m`);
-    await holdUntil(sign>0?{2:'KeyS',0:'KeyD',1:'KeyQ'}[axis]:{2:'KeyW',0:'KeyA',1:'KeyE'}[axis],([ax,a0])=>Math.abs(SF.sim._R.p[ax]-a0)<.08,[axis,a[axis]],1500)}
+    await page.evaluate(()=>SF.reset())}
   // B arch
   await settle();let mB=await mark();await page.keyboard.down('KeyB');await wait(400);s=await S();check(M,'B (hold)','both triggers → arch (mode 1)',s.md==1&&s.Lt==1&&s.Rt==1,`mode=${s.md}`);await page.keyboard.up('KeyB');await wait(300);
   {const st=await S(),nw=await since(mB);check(M,'B (release, hands still)','back to the free rope (mode 0), no throw',st.md==0&&!nw.includes('throw'),`mode=${st.md} new events=${nw}`)}
@@ -57,7 +56,8 @@ const mk=async(xr)=>{const page=await browser.newPage({viewport:{width:900,heigh
   await settle();mk1=await mark();await page.keyboard.down('KeyV');await wait(700);await page.keyboard.up('KeyV');await wait(300);nw=await since(mk1);check(M,'V (both grips) with still hands','forge starts, unrecognised → unforge, nothing fires',nw.includes('forge')&&nw.includes('unforge')&&!nw.includes('sigil'),nw.slice(-4).join(','));
   // the physical verbs behind the sigils
   await settle();await clearEn();await place(0,0,4);await holdUntil('KeyS',()=>SF.sim._R.p[2]<.25);await wait(300);mk1=await mark();await page.keyboard.down('KeyB');await wait(200);await holdUntil('KeyW',()=>SF.sim._R.p[2]>.7);await page.keyboard.up('KeyB');await wait(3000);nw=await since(mk1);check(M,'physical throw (B held, W swing, release B)','arc, throw, catch',['arc','throw','catch'].every(k=>nw.includes(k)),nw.slice(-8).join(','));
-  await settle();await clearEn();await place(0,0,3);await holdUntil('KeyS',()=>SF.sim._R.p[2]<.25);await wait(300);mk1=await mark();await page.mouse.down({button:'left'});await wait(400);await holdUntil('KeyW',()=>SF.sim._R.p[2]>.7);await wait(160);await page.mouse.up({button:'left'});await wait(1500);nw=await since(mk1);check(M,'physical lasso (right trigger held, W swing, release)','lasso mode, loop thrown',nw.includes('rope')&&nw.includes('lasso'),nw.slice(-6).join(','));
+  for(let tr=0;tr<2;tr++){await settle();await clearEn();await place(0,0,3);await holdUntil('KeyS',()=>SF.sim._R.p[2]<.25);await wait(300);mk1=await mark();await page.mouse.down({button:'left'});await wait(400);await page.keyboard.down('KeyW');await wait(300);await page.keyboard.up('KeyW');await page.mouse.up({button:'left'});await wait(1500);nw=await since(mk1);if(nw.includes('lasso'))break} // a 300 ms W hold then an immediate release: the rope tip needs ~0.3 s to reach 3 m/s; one retry, the swing is physical and frame-rate sensitive under software rendering
+  check(M,'physical lasso (right trigger held, W swing, release)','lasso mode, loop thrown',nw.includes('rope')&&nw.includes('lasso'),nw.slice(-6).join(','));
   // whip
   await settle();await clearEn();await place(0,0,1.2);await holdUntil('KeyS',()=>SF.sim._R.p[2]<.25);await wait(300);mk1=await mark();await holdUntil('KeyW',()=>SF.sim._R.p[2]>.7);await holdUntil('KeyS',()=>SF.sim._R.p[2]<.25);await wait(400);nw=await since(mk1);check(M,'whip (fast W/S flick, no trigger)','crack event',nw.includes('crack'),nw.join(',')||'(no events)');
   // M mute, R restart
@@ -112,6 +112,7 @@ const mk=async(xr)=>{const page=await browser.newPage({viewport:{width:900,heigh
   await dev('__dev.hands.right.updatePinchValue(1)');await wait(500);s=await S();check(M,'hand tracking: right pinch','right trigger → lasso mode',s.Rt==1&&s.md==2,`mode=${s.md}`);
   await dev('__dev.hands.left.updatePinchValue(1)');await wait(300);s=await S();check(M,'hand tracking: both pinches','arch',s.md==1,`mode=${s.md}`);
   await dev("__dev.hands.left.updatePinchValue(0);__dev.hands.right.updatePinchValue(0);__dev.primaryInputMode='controller'");await wait(800);await home();
+  {const a=(await S()).R;await dev('__pos("right",.25,1.5,-.4)');await wait(200);const b=(await S()).R;check(M,'controllers back after hand tracking','the right controller drives the right hand again',Math.abs(b[1]-a[1]-.3)<.05,`ΔR.y=${(b[1]-a[1]).toFixed(2)}`);const st=await S();check(M,'no stuck triggers after the switch','both pinches were held at the switch; the controllers start released (L.t=R.t=0)',st.Lt==0&&st.Rt==0,`Lt=${st.Lt} Rt=${st.Rt}`);await home()}
   // keyboard assist inside VR
   const rz=(await S()).R;await page.keyboard.down('KeyW');await wait(220);await page.keyboard.up('KeyW');await wait(60);let r2=(await S()).R;const dz=Math.hypot(r2[0]-rz[0],r2[2]-rz[2]);check(M,'W inside VR','nudges both hands forward (emulator assist)',dz>.3,`Δ=${dz.toFixed(2)} m`);await page.keyboard.down('KeyS');await wait(220);await page.keyboard.up('KeyS');await wait(100);
   await page.keyboard.down('KeyB');await wait(300);check(M,'B inside VR','arch',(await S()).md==1);await page.keyboard.up('KeyB');await settle();
@@ -120,6 +121,13 @@ const mk=async(xr)=>{const page=await browser.newPage({viewport:{width:900,heigh
   await clearEn();for(let i=0;i<3;i++)await place(0,i-1,3);await page.evaluate(()=>SF.charge());ms=await mark();await page.keyboard.press('KeyN');await wait(1500);e=await since(ms);check(M,'N inside VR','slam sigil: nova',e.includes('nova'),e.slice(-6).join(','));
   await page.keyboard.press('KeyM');await wait(100);check(M,'M inside VR','mute toggles',(await S()).mute==1);await page.keyboard.press('KeyM');
   await page.evaluate(()=>{SF.sim._light=2});await page.keyboard.press('KeyR');await page.waitForFunction(()=>SF.sim._wave==1,null,{timeout:8000}).catch(()=>{});s=await S();check(M,'R inside VR','restart at wave 1 with 7 colours',s.wave==1&&s.light==7,`wave=${s.wave} light=${s.light}`);
+  // the hint panel, game over and dawn, each ended by a trigger pull
+  s=await S();check(M,'hint panel in the headset','wave 1 lesson visible (both triggers, boomerang)',s.text.includes('Both triggers')&&s.text.includes('boomerang'),s.text.replace('\n',' | '));
+  await page.evaluate(()=>{SF.sim._light=1;SF.sim._inv=0});await place(0,0,1.3,0); /* no clearEn first: an empty herd between two frames would end the wave, and gores are ignored between waves */await page.waitForFunction(()=>SF.sim._ws==3,null,{timeout:6000}).catch(()=>{});s=await S();check(M,'game over in VR','last colour gored → over, text shown',s.ws==3&&s.light==0&&s.text.includes('colour is gone'),`ws=${s.ws} light=${s.light}`);
+  await dev("__btn('right','trigger',1)");await wait(120);await dev("__btn('right','trigger',0)");await wait(300);s=await S();check(M,'trigger during the 3 s lock','ignored (no accidental restart)',s.ws==3,`ws=${s.ws}`);
+  await wait(3000);await dev("__btn('right','trigger',1)");await wait(120);await dev("__btn('right','trigger',0)");await page.waitForFunction(()=>SF.sim._wave==1&&SF.sim._ws==1,null,{timeout:6000}).catch(()=>{});s=await S();check(M,'trigger after game over','restart at wave 1 with 7 colours',s.wave==1&&s.light==7&&s.ws==1,`wave=${s.wave} light=${s.light} ws=${s.ws}`);await clearEn();
+  await page.evaluate(()=>SF.dawn());await wait(1500);s=await S();check(M,'dawn in VR','Dawn text while the fog lifts, no errors',s.text.includes('Dawn')&&errors.length==0,s.text.replace('\n',' | '));
+  await dev("__btn('left','trigger',1)");await wait(120);await dev("__btn('left','trigger',0)");await page.waitForFunction(()=>SF.sim._wave==1&&SF.sim._ws==1,null,{timeout:6000}).catch(()=>{});s=await S();check(M,'trigger after dawn','new game at wave 1 with 7 colours',s.wave==1&&s.ws==1&&s.light==7,`wave=${s.wave} ws=${s.ws}`);await clearEn();await home();
   await dev('__dev.activeSession.end()');await wait(1200);check(M,'session end','desktop mode again, ENTER VR offered',(await S()).xr==0&&(await page.textContent('#b'))=='ENTER VR');
   await page.click('#b');await wait(1500);check(M,'re-enter VR','second session starts',(await S()).xr==1);await dev('__dev.activeSession.end()');await wait(800);
   check(M,'console','zero errors',errors.length==0,errors.slice(0,3).join(' | '));await page.close()}
