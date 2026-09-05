@@ -36,7 +36,10 @@ extension (or the WebXR API Emulator):
 8. In the emulator you cannot move a controller and press a button at the same
    time, so the game remembers a fast swing for half a second: swing the
    controllers forward quickly in the panel, then release the triggers. The same
-   grace applies to the lasso.
+   grace applies to the lasso. The keyboard also works inside the session: WASD/QE
+   nudge both hands, B holds both triggers, Space throws, G lassoes, N claps.
+   There is no locomotion by design: the player never moves; turn the headset to
+   face the herd.
 9. Anything that fails: note it and fix it in the bugfix window (PRs by 14 Sept).
 
 **Firefox** could not be run on the build machine: Playwright's Firefox binary
@@ -53,13 +56,13 @@ giant on desktop before submitting and tell me what to change.
 
 | step | bytes |
 |---|---|
-| source, concatenated | 46,276 |
-| terser (property-mangled) | 33,896 |
-| roadroller -O2 | 17,017 |
-| index.html (inlined) | 17,657 |
-| **dist/sevenfold.zip** | **13,260** (limit 13,312; margin 52) |
+| source, concatenated | 46,382 |
+| terser (property-mangled) | 33,838 |
+| roadroller -O2 | 17,034 |
+| index.html (inlined) | 17,674 |
+| **dist/sevenfold.zip** | **13,275** (limit 13,312; margin 37) |
 
-The shipping build is `node build.js --level 2` (`npm run build`). Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
+The shipping build is `node build.js --level 2 --iter 200` (`npm run build`). Roadroller's optimiser is not perfectly deterministic: rebuilding can move the
 zip by ±15 bytes. `build.js` fails above the limit, so a rebuild can never ship
 an oversized file unnoticed.
 
@@ -100,6 +103,7 @@ ash and the boss mist (≈60 bytes), the ground grain (≈90), the standing ston
 | offline three.js → friendly message | ok | not run |
 | XR shim: enter, 300 frames, throw + catch, exit | ok | n/a |
 | IWER (Immersive Web Emulator runtime, Quest 3): enter, start, arch, throw, lasso, grips, pinches, exit | ok | n/a |
+| `node tools/controls.mjs`: every control, desktop (27 checks) and VR (32 checks) | 59/59 | n/a |
 | `node test/sim.test.js` | 19/19 | — |
 
 Perfect-bot clear times (seconds, seeds 1–8): waves 11–12, 15–16, 19–21, 18–20,

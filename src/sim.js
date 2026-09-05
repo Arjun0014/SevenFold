@@ -33,7 +33,7 @@ S._init=()=>{
   S._rp=[];S._rq=[];S._rv=[];for(let i=0;i<=N;i++){S._rp.push([0,0,0]);S._rq.push([0,0,0]);S._rv.push([0,0,0])}resetRope();
   S._md=0;S._bm=0;S._ls=0;S._ch=0;S._crk=0;S._nv=0;S._tip=0;S._tipI=N>>1;S._pkt=0;S._pd=[0,0,1];S._tk=0;S._tkt=0;S._tv=[0,0,1];
   S._light=7;S._inv=0;S._en=[];S._wave=0;S._ws=0;S._wt=0;S._q=[];S._st=0;S._wtime=0;S._front=0;S._log=[];
-  S._t=0;S._score=0;S._ev=[];S._bolt=4;S._dawn=0;S._kills=0;
+  S._t=0;S._score=0;S._ev=[];S._bolt=4;S._dawn=0;
 };
 S._init();
 
@@ -43,7 +43,7 @@ const hurt=n=>{if(S._inv>0||S._ws!=1)return;S._light=max(0,S._light-n);S._inv=1.
 const damage=(e,n,b,p,f)=>{if(e._st==5)return 0;const res=f||b==e._b&&b<S._light;
   if(res){n*=3;ev('res',p,b);if(!f&&S._ch<3&&++S._ch==3)ev('ready',p)}else ev('hit',p,b);
   e._hp-=n;e._fl=.12;if(e._hp<=0)kill(e);return 1};
-const kill=e=>{e._st=5;e._tm=0;e._rear=0;S._kills++;S._score+=e._boss?500:10*(1+e._v);ev('kill',hd(e),e._b,e._v);
+const kill=e=>{e._st=5;e._tm=0;e._rear=0;S._score+=e._boss?500:10*(1+e._v);ev('kill',hd(e),e._b,e._v);
   if(e._boss){S._light=min(7,S._light+2);for(const x of S._en)if(x!=e&&x._st!=5)kill(x);if(e._v==4){S._ws=4;S._wt=6;ev('dawn')}}};
 const near=(p,r)=>{const o=[];for(const e of S._en)if(e._st!=5){const d=edist(e,p);if(d<r)o.push([e,d])}return o.sort((a,b)=>a[1]-b[1])};
 // nearest rope/arch point to an enemy: [index, surface distance]
@@ -87,9 +87,7 @@ const modes=()=>{
     if(ls.e){const e=ls.e,v=ls.h.v,aw=sub(ls.h.p,e._p);
       if(e._st!=4){endLasso();return}
       if(len(v)>=3.5&&dot(v,aw)>0){ev('yank',hd(e),ls.b);e._st=3;e._sd=1;e._tm=0;damage(e,e._boss?8:5,ls.b,hd(e));endLasso();return}
-      if(ls.t>4||both){stag(e,1);endLasso();return}
-      const d=dist(e._p,hx());if(d>1.6&&!e._boss)e._p=add(e._p,mul(norm(sub(hx(),e._p)),.5*DT));
-      return}
+      if(ls.t>4||both){stag(e,1);endLasso()}return}
     if(ls.out){ls.v[1]-=8*DT;const n=near(ls.p,3)[0];if(n)ls.v=lerp(ls.v,mul(norm(sub(hd(n[0]),ls.p)),len(ls.v)),.12); // aim assist
       ls.p=add(ls.p,mul(ls.v,DT));if(ls.p[1]<.1)ls.p[1]=.1;if(n&&!(n[0]._boss&&n[0]._st==9)){const e=n[0];e._st=4;e._tm=0;e._rear=0;ls.e=e;ls.t=0;ev('caught',hd(e),e._b);return}
       if(ls.t>1.3||len(ls.p)>14)endLasso();return}
@@ -170,7 +168,7 @@ S.inject=(L,R,H)=>{L&&cp(S._L,L);R&&cp(S._R,R);H&&cp(S._H,H)}; // {p,q,t,g}, {p,
 S.step=n=>{for(let i=0;i<(n||1);i++){
   S._t+=DT;if(S._nv>0)S._nv-=DT;const w=S._nv>0?DT*.15:DT;
   // hand velocity per pose update, not per step: a display frame can cover two sim steps (72 Hz vs 90 Hz)
-  for(const h of[S._L,S._R]){h.t=h.t||h.g?1:0;h.n++;const p=h.p,q=h.pp;if(p[0]!=q[0]||p[1]!=q[1]||p[2]!=q[2]){h.v=lerp(h.v,mul(sub(p,q),1/(DT*h.n)),.5);h.pp=[...p];h.n=0}else if(h.n>3)h.v=mul(h.v,.7)}
+  for(const h of[S._L,S._R]){h.t=h.t||h.g?1:0;h.n++;const p=h.p,q=h.pp;if(p[0]!=q[0]||p[1]!=q[1]||p[2]!=q[2]){const r=mul(sub(p,q),1/(DT*h.n));h.v=len(r)>20?[0,0,0]:lerp(h.v,r,.5);h.pp=[...p];h.n=0}else if(h.n>3)h.v=mul(h.v,.7)} // a teleport (reconnect, macro reset) is not a swing
   if(S._inv>0)S._inv-=w;
   S._bolt-=DT;if(S._bolt<=0){S._bolt=6+rnd()*9;const a=rnd()*6.28;ev('bolt',[sin(a)*32,0,cos(a)*32],floor(rnd()*7))}
   rope();modes();strikes();boom();enemies(w);waves(w);

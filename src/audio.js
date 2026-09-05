@@ -44,9 +44,7 @@ export function auSync(S,ev,mute){if(!auC)return;auM.gain.value=mute?0:.5;if(auC
     else if(k=='crack'){noise(.05,.35,6000,900,p);hit('square',fq(b,3),.05,.12,.5,p)}
     else if(k=='arc')hit('sine',fq(3,3),.12,.08,1.5);
     else if(k=='throw')noise(.5,.25,3000,200,p);
-    else if(k=='turn')noise(.3,.12,600,2500);
     else if(k=='catch'){noise(.07,.2,1500,300);hit('sine',fq(4,3),.15,.1)}
-    else if(k=='rope')hit('sine',fq(b,2),.15,.06,.7);
     else if(k=='lasso')noise(.45,.2,2500,300,p);
     else if(k=='caught'){noise(.08,.3,1200,200,p);hit('square',fq(b,2),.2,.1,1.5,p)}
     else if(k=='yank'){noise(.3,.4,800,60,p);hit('sawtooth',fq(b,0),.4,.2,.4,p)}
@@ -61,7 +59,7 @@ export function auSync(S,ev,mute){if(!auC)return;auM.gain.value=mute?0:.5;if(auC
     else if(k=='cue')hit('sine',fq(b,4),.9,.12,1.06,p);
     else if(k=='strike'||k=='bolt'){const d=len(sub(p,H)),v=k=='bolt'?.5:.9;noise(.2,v*.6,7000,2000,p,d/60);noise(2.5,v,900,50,p,d/60+.1);hit('sine',45,2,v*.5,.6,p)}
     else if(k=='wave'){hit('sine',110,.6,.4,.5);setTimeout(()=>hit('sine',82,.7,.4,.5),260);if(e.d==5||e.d==10){hit('sawtooth',36,3,.4,1.5);noise(3,.35,300,40)}}
-    else if(k=='clear')for(let i=0;i<3;i++)setTimeout(()=>hit('sine',fq([0,4,6][i],3),.6,.1),i*120);
+    else if(k=='clear')chord(4,0,.1,.9);
     else if(k=='over'){hit('sawtooth',fq(0,-1),4,.4,.5);noise(3,.3,800,40)}
     else if(k=='dawn')for(let i=0;i<7;i++)setTimeout(()=>{hit('sine',fq(i,2),6,.14);hit('triangle',fq(i,1),6,.06)},i*300);
   }

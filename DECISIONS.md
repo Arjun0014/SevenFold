@@ -302,3 +302,39 @@ through IWER (Quest 3 profile) in Chromium. Findings and fixes:
   starts the game, both triggers → arch, swing → throw → hit → kill → catch,
   one trigger → lasso → caught → yank → kill, both squeezes → arch, hand
   tracking: one pinch → lasso, two → arch, session end → desktop, zero errors.
+
+## Controls audit (2026-09-05, user present)
+
+The user reported that in the emulator's VR mode the keyboard did nothing and
+"moving around" was impossible, and asked for every control to be checked.
+
+- **Keyboard and mouse now work inside a VR session** as an emulator assist:
+  WASD/QE nudge both hands in head space (offsets added to the controller poses),
+  B holds both triggers, mouse buttons are triggers, Space/G/N run the macros
+  around the headset position and yaw. The desktop and XR paths share one
+  `inpHS(p, yaw, origin)` transform.
+- No locomotion, by design (CLAUDE.md comfort rule): the player never moves.
+- Desktop default hands lowered to 1.25 m so a lateral arch sweep connects with a
+  unicorn's body and head.
+- To pay for the assist (≈110 bytes): dropped the wave-7 hint, the lasso drag,
+  the lasso-start blip and the boomerang-turn whoosh, the wave-clear arpeggio
+  (one chord now), the unused `macro` hook and kills counter, shorter overlay
+  and Dawn texts; zopfli 200 iterations. 13,258 bytes.
+- `tools/controls.mjs` audits every control: desktop (button, mouse look,
+  both mouse buttons, first trigger, W/A/S/D/E/Q directions, B arch, arch strike,
+  block, Space throw and its hit, G lasso and catch, yank, N Nova and its
+  charge requirement, whip crack, M, R) and VR through IWER (ENTER VR, recentre
+  on the first trigger, head movement and rotation, left/right controller
+  mapping, left trigger, right grip, both triggers, swing+release throw with
+  hit, swing-stop-release grace, slow release without a throw, one-trigger
+  lasso mode, spin+release catch, yank, block, clap Nova, whip crack, hand
+  tracking one and two pinches, W/B/Space/G/N/M/R inside VR, session end,
+  re-enter). 59/59 on the final build, zero console errors in both modes.
+- The user still refers to "sigils" and "weapons": those are gone since the
+  rehaul (their own choice in the design questions); the five rope verbs are
+  the weapons.
+- The audit found a real bug: a hand teleport (a desktop macro ending, a
+  controller reconnecting) produced a speed spike that decayed through the
+  "valid swing" range and armed the throw grace, so releasing the arch a moment
+  later threw the boomerang. A pose jump faster than 20 m/s now zeroes the hand
+  velocity instead of being averaged in. 13,275 bytes.

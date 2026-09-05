@@ -1,13 +1,13 @@
 // main.js — boot: dynamic import of the hosted three.js, renderer, loop, SF hook.
 import {createSim,DT} from './sim.js';
-import {inpInit,inpPoll,inpMacro,inpKeys,inpO} from './input.js';
+import {inpInit,inpPoll,inpKeys,inpO} from './input.js';
 import {xrInit,xrS,xrPulse} from './xr.js';
 import {rdInit,rdSync,rdM} from './render.js';
 import {auInit,auSync} from './audio.js';
 import {yawOf} from './vec.js';
 
 const mU=document.getElementById('u'),mB=document.createElement('button'),mH=document.createElement('div');
-mB.id='b';mB.textContent='…';mH.id='h';mH.textContent='Mouse look · LMB/RMB triggers · B both (arch) · Space throw · G lasso · N Nova · WASD/QE hands · R restart · M mute';
+mB.id='b';mH.id='h';mH.textContent='Mouse look · LMB/RMB triggers · B arch · Space throw · G lasso · N Nova · WASD/QE hands · R restart · M mute';
 document.body.append(mB,mH);
 let T;try{T=await import(U)}catch(e){} // U: hosted three.js URL, a plain global defined outside the packed script (build.js / index.html)
 let R;try{R=new T.WebGLRenderer({antialias:true})}catch(e){}
@@ -22,7 +22,7 @@ else{
   const save=()=>{try{const b=JSON.parse(localStorage.getItem('sevenfold_best')||'{}');if(!b.score||sim._score>b.score)localStorage.setItem('sevenfold_best',JSON.stringify({wave:sim._wave,score:sim._score,time:sim._t|0}))}catch(e){}};
   const recentre=()=>{const y=yawOf([cam.quaternion.x,cam.quaternion.y,cam.quaternion.z,cam.quaternion.w]);inpO.x=cam.position.x;inpO.z=cam.position.z;inpO.y=y;world.position.set(inpO.x,0,inpO.z);world.rotation.y=y};
   const SF=window.SF={manual:0,rec:0,rd:rdM,R,
-    get sim(){return sim},inject:(L,R_,H)=>sim.inject(L,R_,H),step:n=>sim.step(n),macro:inpMacro,
+    get sim(){return sim},inject:(L,R_,H)=>sim.inject(L,R_,H),step:n=>sim.step(n),
     newGame:s=>{sim=createSim(s);evLog=[];started=1;mB.hidden=true;return sim},charge:()=>{sim._ch=3},
     state:()=>({wave:sim._wave,ws:sim._ws,mode:sim._md,light:sim._light,charge:sim._ch,xr:xrS.on,calls:R.info.render.calls,tris:R.info.render.triangles,events:evLog.slice(-300),text:rdM.text,mute})};
   xrInit(R,mB,()=>{started=1;mH.hidden=xrS.sup;auInit()},()=>{mH.hidden=false;inpO.x=inpO.z=inpO.y=0;world.position.set(0,0,0);world.rotation.y=0});

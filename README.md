@@ -1,7 +1,7 @@
 # SEVENFOLD
 
 A standing-play WebXR arena game for **js13kGames 2026** (theme: *Unicorns and
-Rainbows*), category **WebXR**. One `index.html`, 13,260 bytes zipped, plus the
+Rainbows*), category **WebXR**. One `index.html`, 13,275 bytes zipped, plus the
 competition's hosted Three.js.
 
 You are a mage holding the last rainbow. The Umbra took the colour out of the
@@ -33,6 +33,12 @@ colour from where it stands — the horde is the music.
 | — | WASD / QE | move both hands |
 | — | R / M | restart / mute |
 
+Inside a VR session the keyboard and mouse still work as an assist for browser
+emulators (the Immersive Web Emulator cannot move a controller and press a button
+at once): WASD/QE nudge both hands, B holds both triggers, Space/G/N run the
+throw/lasso/clap around the headset. A fast swing is remembered for half a second,
+so you can swing, stop, then release.
+
 **Colour**: red is always at your left hand, violet at your right. The band that
 touches a horn of the same colour does triple damage and charges the Nova. Each
 gore greys out one band of your rainbow from the violet end; a greyed colour is
@@ -48,6 +54,7 @@ node test/sim.test.js              # Node: rope, verbs, resonance, bots, determi
 node test/browser.test.js chromium --xr   # Playwright: built zip, desktop + XR shim
 node tools/botrun.mjs 1 8          # perfect bot, seeds 1–8, per-wave clear times
 node tools/iwer.mjs                # the built zip through Meta's WebXR emulation runtime (Quest 3 profile)
+node tools/controls.mjs            # every control, desktop and VR: a 59-row pass/fail table
 ```
 
 The dev server swaps the hosted Three.js URL for a local byte-identical copy

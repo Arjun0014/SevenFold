@@ -6,7 +6,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node build.js --level 2",
+    "build": "node build.js --level 2 --iter 200",
     "test": "node test/sim.test.js && node test/browser.test.js",
     "test:sim": "node test/sim.test.js",
     "test:browser": "node test/browser.test.js",

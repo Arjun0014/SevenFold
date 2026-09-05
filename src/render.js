@@ -37,7 +37,7 @@ vec4 w=modelMatrix*instanceMatrix*vec4(p,1.);vw=w.xyz;vn=normalize(mat3(modelMat
 vec4 mv=viewMatrix*w;vd=-mv.z;gl_Position=projectionMatrix*mv;}`;
 const W_F=`uniform vec3 c[7],lp,bd,lc;uniform float fl,li,dawn;${FOG}varying vec3 vn,vw;varying float ve,vd,vb;
 void main(){vec3 n=normalize(vn),v=normalize(cameraPosition-vw),L=lp-vw;float d=length(L),r=pow(1.-max(dot(n,v),0.),3.);
-vec3 k=mix(vec3(.022,.024,.034),vec3(.1,.07,.08),dawn)+mix(vec3(.045,.05,.075),vec3(.42,.33,.32),dawn)*(.5+.5*n.y)+mix(vec3(.3,.34,.48),vec3(.9,.7,.6),dawn)*r*.38
+vec3 k=mix(vec3(.02,.024,.034),vec3(.1,.07,.08),dawn)+mix(vec3(.045,.05,.075),vec3(.42,.33,.32),dawn)*(.5+.5*n.y)+mix(vec3(.3,.34,.48),vec3(.9,.7,.6),dawn)*r*.38
 +lc*li*max(dot(n,L/d),0.)/(1.+d*d)+fl*vec3(.5,.35,.6)*max(dot(n,bd),0.);
 vec2 cc=floor(vw.xz*12.)+floor(vw.y*12.)*7.;vec3 hh=fract(vec3(cc.x,cc.y,cc.x)*.1031);hh+=dot(hh,hh.yzx+33.33);k*=.88+.2*fract((hh.x+hh.y)*hh.z);
 int b=int(vb*7.);float f=fract(vb*7.);k=mix(k,c[b]*(1.2+f*3.)+f*.5,ve);
@@ -100,7 +100,7 @@ export function rdInit(T_,R){
   rdM.U=U;rdM.W=W;rdM.S=rdScene;rdM.C=rdCam; //@test
   return{scene:rdScene,cam:rdCam,world:rdWorld};
 }
-const rdHints={1:'Hold both triggers. Swing. Let go.',2:"Match a horn's colour to shatter it.",3:'Hold both triggers to block a charge.',4:'One trigger: swing the lasso. Let go. Pull.',6:'Three colour hits: clap the rainbow.',7:'Chargers: block, then strike.'};
+const rdHints={1:'Hold both triggers. Swing. Let go.',2:"Match a horn's colour to shatter it.",3:'Hold both triggers to block a charge.',4:'One trigger: swing the lasso. Let go. Pull.',6:'Three colour hits: clap the rainbow.'};
 const setP=(o,p)=>o.position.set(p[0],p[1],p[2]);
 
 export function rdSync(S,ev,dt,H){
@@ -122,7 +122,7 @@ export function rdSync(S,ev,dt,H){
     else if(k=='wave')rdSetText(e.d==5?'THE HERALD':e.d==10?'THE SOVEREIGN':'Wave '+e.d,e.d==5?'Block the charge. Strike while it reels.':e.d==10?'Its horn wears every colour.':rdHints[e.d]||'');
     else if(k=='clear'||k=='start'||k=='restart')rdSetText('','');
     else if(k=='over')rdSetText('The last colour is gone','Wave '+S._wave+' · Score '+S._score+' · Trigger to retry');
-    else if(k=='dawn')rdSetText('Dawn','Colour returns · Score '+S._score+' · '+(S._t|0)+' s · Trigger to play again');
+    else if(k=='dawn')rdSetText('Dawn','Score '+S._score+' · Trigger to play again');
   }
   // ---- atmosphere: flash, hurt, dawn, fog
   if(rdFl>0)rdFl-=dt*4;U.fl.value=max(0,rdFl)*(.6+.4*rnd());
